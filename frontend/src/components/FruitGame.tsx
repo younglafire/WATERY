@@ -3,7 +3,8 @@ import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@
 import { Transaction } from '@mysten/sui/transactions'
 import Matter from 'matter-js'
 
-const PACKAGE_ID = '0xe6d304e671b8fd270f8b5d978dfed1a9debd20ec20ea784e36fb872fa3a2b638'
+const PACKAGE_ID = '0x45e50719c020cc81a8d2953a9701119a4e71cc48cad819d456ab48579e19041e'
+const RANDOM_OBJECT = '0x8' // Sui random object
 
 // Fruit configurations
 const FRUITS = [
@@ -25,13 +26,15 @@ interface GameState {
   isGameOver: boolean
   isClaiming: boolean
   dropsRemaining: number
+  claimCompleted: boolean
 }
 
 interface FruitGameProps {
+  playerAccountId?: string
   onSeedsHarvested?: (seeds: number) => void
 }
 
-export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
+export default function FruitGame({ playerAccountId, onSeedsHarvested }: FruitGameProps) {
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
@@ -48,10 +51,12 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
     isGameOver: false,
     isClaiming: false,
     dropsRemaining: 0,
+    claimCompleted: false,
   })
   const [canDrop, setCanDrop] = useState(true)
   const [txStatus, setTxStatus] = useState<string>('')
   const [gameStarted, setGameStarted] = useState(false)
+  const [gameSessionId, setGameSessionId] = useState<string | null>(null)
   
   const fruitsRef = useRef<Map<number, { body: Matter.Body; level: number; index: number; dropTime: number }>>(new Map())
   const fruitIndexCounter = useRef(0)
@@ -64,28 +69,55 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
     return level
   }
 
-  // Start claiming - requires 5 more drops before mint
-  const startClaiming = () => {
-    if (gameState.seedsPending === 0) return
-    setGameState(prev => ({
-      ...prev,
-      isClaiming: true,
-      dropsRemaining: 5,
-    }))
+  // Start claiming - call on-chain to initiate 5-drop countdown
+  const startClaiming = async () => {
+    if (gameState.seedsPending === 0 || !gameSessionId) return
+    
+    setTxStatus('🎯 Starting claim...')
+    const tx = new Transaction()
+    
+    tx.moveCall({
+      target: `${PACKAGE_ID}::game::start_claim`,
+      arguments: [tx.object(gameSessionId)],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async (result) => {
+          await suiClient.waitForTransaction({ digest: result.digest })
+          setGameState(prev => ({
+            ...prev,
+            isClaiming: true,
+            dropsRemaining: 5,
+            claimCompleted: false,
+          }))
+          setTxStatus('🎯 Claim started! Drop 5 more fruits.')
+          setTimeout(() => setTxStatus(''), 3000)
+        },
+        onError: (error) => {
+          console.error('Error starting claim:', error)
+          setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
+        },
+      }
+    )
   }
 
   // Harvest seeds on-chain - only after 5 drops during claim
   const harvestSeedsOnChain = async () => {
-    if (!account?.address || gameState.seedsPending === 0 || gameState.dropsRemaining > 0) return
+    if (!account?.address || !gameSessionId || !playerAccountId) return
+    if (gameState.seedsPending === 0 || !gameState.claimCompleted) return
     
-    setTxStatus('🌾 Minting seeds on-chain...')
+    setTxStatus('🌾 Harvesting seeds on-chain...')
     const tx = new Transaction()
     
-    // Call mint_seeds with the amount earned
+    // Call complete_harvest with GameSession and PlayerAccount
     tx.moveCall({
-      target: `${PACKAGE_ID}::game::mint_seeds`,
+      target: `${PACKAGE_ID}::game::complete_harvest`,
       arguments: [
-        tx.pure.u64(gameState.seedsPending),
+        tx.object(gameSessionId),
+        tx.object(playerAccountId),
       ],
     })
 
@@ -97,7 +129,7 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
           const harvested = gameState.seedsPending
           onSeedsHarvested?.(harvested)
           
-          // Reset game completely after successful mint
+          // Reset game completely after successful harvest
           if (engineRef.current) {
             for (const [, fruit] of fruitsRef.current) {
               Matter.Composite.remove(engineRef.current.world, fruit.body)
@@ -112,13 +144,15 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
             isGameOver: false,
             isClaiming: false,
             dropsRemaining: 0,
+            claimCompleted: false,
           })
           setGameStarted(false) // Must click to play again
-          setTxStatus(`🎉 Minted ${harvested} seeds! Click to play again.`)
+          setGameSessionId(null)
+          setTxStatus(`🎉 Harvested ${harvested} seeds! Click to play again.`)
           setTimeout(() => setTxStatus(''), 3000)
         },
         onError: (error) => {
-          console.error('Error minting seeds:', error)
+          console.error('Error harvesting seeds:', error)
           setTxStatus('Error: ' + error.message)
           setTimeout(() => setTxStatus(''), 5000)
         },
@@ -127,7 +161,7 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
   }
 
   // Reset game locally
-  const resetGame = () => {
+  const resetGameLocal = () => {
     if (!engineRef.current) return
     
     // Clear all fruits
@@ -143,14 +177,63 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
       isGameOver: false,
       isClaiming: false,
       dropsRemaining: 0,
+      claimCompleted: false,
     })
     setNextFruit(Math.floor(Math.random() * 3))
-    setGameStarted(true)
   }
 
-  // Start new game locally
-  const startGame = () => {
-    resetGame()
+  // Start new game on-chain (requires PlayerAccount)
+  const startGame = async () => {
+    if (!account?.address || !playerAccountId) {
+      // Play without on-chain session (offline mode)
+      resetGameLocal()
+      setGameStarted(true)
+      return
+    }
+    
+    setTxStatus('🎮 Starting game session...')
+    const tx = new Transaction()
+    
+    tx.moveCall({
+      target: `${PACKAGE_ID}::game::start_game_entry`,
+      arguments: [tx.object(playerAccountId)],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async (result) => {
+          const txDetails = await suiClient.waitForTransaction({
+            digest: result.digest,
+            options: { showObjectChanges: true }
+          })
+          
+          // Find created GameSession
+          const created = txDetails.objectChanges?.find(
+            (change) => change.type === 'created' && 
+            'objectType' in change && 
+            change.objectType.includes('GameSession')
+          )
+          
+          if (created && 'objectId' in created) {
+            setGameSessionId(created.objectId)
+          }
+          
+          resetGameLocal()
+          setGameStarted(true)
+          setTxStatus('🎮 Game started!')
+          setTimeout(() => setTxStatus(''), 2000)
+        },
+        onError: (error) => {
+          console.error('Error starting game:', error)
+          // Fall back to offline mode
+          resetGameLocal()
+          setGameStarted(true)
+          setTxStatus('Playing offline (connect wallet for on-chain seeds)')
+          setTimeout(() => setTxStatus(''), 3000)
+        },
+      }
+    )
   }
 
   // Initialize Matter.js
@@ -288,10 +371,54 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
     }
   }, [])
 
+  // Drop fruit - on-chain when in claiming mode with session, otherwise local
+  const dropFruitOnChain = useCallback(async (x: number) => {
+    if (!gameSessionId) return
+    
+    const tx = new Transaction()
+    tx.moveCall({
+      target: `${PACKAGE_ID}::game::drop_fruit`,
+      arguments: [
+        tx.object(gameSessionId),
+        tx.object(RANDOM_OBJECT),
+      ],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async () => {
+          // Drop the fruit locally after on-chain confirmation
+          dropFruitLocal(x)
+          
+          // Update state
+          setGameState(prev => {
+            const newDrops = prev.dropsRemaining - 1
+            return {
+              ...prev,
+              dropsRemaining: newDrops,
+              claimCompleted: newDrops === 0,
+            }
+          })
+        },
+        onError: (error) => {
+          console.error('Error dropping fruit on-chain:', error)
+          // If claim is completed, show error
+          if (error.message.includes('no_drops_remaining') || error.message.includes('104')) {
+            setTxStatus('🛑 Claim complete! Harvest your seeds.')
+            setGameState(prev => ({ ...prev, claimCompleted: true, dropsRemaining: 0 }))
+          }
+        },
+      }
+    )
+  }, [gameSessionId, signAndExecute])
+  
   // Drop fruit locally - FREE, no transaction!
-  const dropFruit = useCallback(
+  const dropFruitLocal = useCallback(
     (x: number) => {
       if (!engineRef.current || !canDrop || gameState.isGameOver || !gameStarted) return
+      // Block drops if claim is completed
+      if (gameState.claimCompleted) return
 
       const fruit = FRUITS[nextFruit]
       const body = Matter.Bodies.circle(x, 50, fruit.radius, {
@@ -305,20 +432,42 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
       fruitsRef.current.set(body.id, { body, level: fruit.level, index: newIndex, dropTime: Date.now() })
       Matter.Composite.add(engineRef.current.world, body)
 
-      // If in claiming mode, decrement drops remaining
-      if (gameState.isClaiming && gameState.dropsRemaining > 0) {
-        setGameState(prev => ({
-          ...prev,
-          dropsRemaining: prev.dropsRemaining - 1,
-        }))
-      }
-
       setCanDrop(false)
       setTimeout(() => setCanDrop(true), 500)
       setNextFruit(Math.floor(Math.random() * 3))
     },
-    [nextFruit, canDrop, gameState.isGameOver, gameStarted]
+    [nextFruit, canDrop, gameState.isGameOver, gameState.claimCompleted, gameStarted]
   )
+
+  // Main drop function - routes to on-chain or local
+  const dropFruit = useCallback((x: number) => {
+    if (!engineRef.current || !canDrop || gameState.isGameOver || !gameStarted) return
+    // Block drops if claim is completed
+    if (gameState.claimCompleted) {
+      setTxStatus('🛑 Claim complete! Harvest your seeds now.')
+      return
+    }
+    
+    // If in claiming mode with session, use on-chain drop
+    if (gameState.isClaiming && gameSessionId) {
+      dropFruitOnChain(x)
+    } else {
+      // Regular local drop
+      dropFruitLocal(x)
+      
+      // If in claiming mode but no session (offline), still decrement locally
+      if (gameState.isClaiming && gameState.dropsRemaining > 0) {
+        setGameState(prev => {
+          const newDrops = prev.dropsRemaining - 1
+          return {
+            ...prev,
+            dropsRemaining: newDrops,
+            claimCompleted: newDrops === 0,
+          }
+        })
+      }
+    }
+  }, [gameState.isClaiming, gameState.dropsRemaining, gameState.claimCompleted, gameState.isGameOver, gameStarted, gameSessionId, canDrop, dropFruitOnChain, dropFruitLocal])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!gameStarted) {
@@ -409,7 +558,7 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
                 )}
               </div>
             )}
-            <button className="btn-restart" onClick={resetGame}>
+            <button className="btn-restart" onClick={() => startGame()}>
               🔄 Play Again
             </button>
           </div>
@@ -417,9 +566,16 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
       </div>
 
       {/* Claiming Mode Overlay */}
-      {gameState.isClaiming && gameState.dropsRemaining > 0 && (
+      {gameState.isClaiming && gameState.dropsRemaining > 0 && !gameState.claimCompleted && (
         <div className="claiming-banner">
           🎯 Drop {gameState.dropsRemaining} more fruits to claim {gameState.seedsPending} seeds!
+        </div>
+      )}
+
+      {/* Claim Completed Banner */}
+      {gameState.claimCompleted && gameState.seedsPending > 0 && (
+        <div className="claiming-banner success">
+          🛑 No more drops! Harvest your {gameState.seedsPending} seeds now!
         </div>
       )}
 
@@ -428,28 +584,29 @@ export default function FruitGame({ onSeedsHarvested }: FruitGameProps) {
         <div className="harvest-during-game">
           {!gameState.isClaiming ? (
             // Not claiming yet - show Start Claim button
-            account ? (
+            account && playerAccountId ? (
               <button 
                 className="btn-claim-start" 
                 onClick={startClaiming}
+                disabled={isPending}
               >
-                🌾 Claim {gameState.seedsPending} Seeds (5 drops)
+                {isPending ? '⏳ Starting...' : `🌾 Claim ${gameState.seedsPending} Seeds (5 drops)`}
               </button>
             ) : (
               <span className="hint">Connect wallet to claim seeds</span>
             )
-          ) : gameState.dropsRemaining === 0 ? (
-            // Claiming done - can mint now
-            account ? (
+          ) : gameState.claimCompleted ? (
+            // Claiming done - can harvest now
+            account && playerAccountId ? (
               <button 
                 className="btn-harvest" 
                 onClick={harvestSeedsOnChain} 
                 disabled={isPending}
               >
-                {isPending ? '⏳ Minting...' : `✨ Mint ${gameState.seedsPending} Seeds Now!`}
+                {isPending ? '⏳ Harvesting...' : `✨ Harvest ${gameState.seedsPending} Seeds Now!`}
               </button>
             ) : (
-              <span className="hint">Connect wallet to mint seeds</span>
+              <span className="hint">Connect wallet to harvest seeds</span>
             )
           ) : (
             // Still need to drop more
