@@ -211,8 +211,9 @@ module contract::land {
         let now = sui::clock::timestamp_ms(clock);
         
         // Auto-harvest if slot has a ready fruit
-        if (option::is_some(land.slots.borrow(slot_index))) {
-            let fruit = option::borrow(land.slots.borrow(slot_index));
+        let slot_ref = land.slots.borrow(slot_index);
+        if (option::is_some(slot_ref)) {
+            let fruit = option::borrow(slot_ref);
             if (utils::is_fruit_ready(fruit.planted_at, now)) {
                 // Harvest it
                 let harvested = HarvestedFruit {
@@ -297,8 +298,9 @@ module contract::land {
         // First pass: auto-harvest all ready fruits
         let mut i = 0u64;
         while (i < max_slots) {
-            if (option::is_some(land.slots.borrow(i))) {
-                let fruit = option::borrow(land.slots.borrow(i));
+            let slot_ref = land.slots.borrow(i);
+            if (option::is_some(slot_ref)) {
+                let fruit = option::borrow(slot_ref);
                 if (utils::is_fruit_ready(fruit.planted_at, now)) {
                     let harvested = HarvestedFruit {
                         fruit_type: fruit.fruit_type,

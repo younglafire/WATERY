@@ -10,6 +10,14 @@
 module contract::utils {
     use contract::types;
 
+    // ========================= CONSTANTS =====================================
+    
+    /// Seeds needed to gain 1 bonus point for rarity roll
+    const SEEDS_PER_BONUS: u64 = 2;
+    
+    /// Maximum rarity roll value (1-100 scale)
+    const MAX_ROLL: u64 = 100;
+
     // ========================= RARITY CALCULATION ============================
     
     /// Calculate rarity based on random roll and seeds planted
@@ -22,11 +30,11 @@ module contract::utils {
     /// - Epic: 8% (roll 91-98)
     /// - Legendary: 2% (roll 99-100)
     /// 
-    /// Seed bonus: +1 to roll per 2 seeds planted (capped at 100)
+    /// Seed bonus: +1 to roll per SEEDS_PER_BONUS seeds planted (capped at MAX_ROLL)
     public fun calculate_rarity(roll: u64, seeds_planted: u64): u8 {
-        // Add bonus based on seeds planted (1 point per 2 seeds)
-        let bonus = seeds_planted / 2;
-        let adjusted_roll = if (roll + bonus > 100) { 100 } else { roll + bonus };
+        // Add bonus based on seeds planted (1 point per SEEDS_PER_BONUS seeds)
+        let bonus = seeds_planted / SEEDS_PER_BONUS;
+        let adjusted_roll = if (roll + bonus > MAX_ROLL) { MAX_ROLL } else { roll + bonus };
         
         if (adjusted_roll <= 50) {
             types::common()

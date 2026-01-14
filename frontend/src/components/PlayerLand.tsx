@@ -208,44 +208,6 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
     )
   }
 
-  // Create first land FREE (legacy, use create_player_account instead)
-  const createLandOnChain = async () => {
-    setTxStatus('Creating land...')
-    const tx = new Transaction()
-    tx.moveCall({
-      target: `${PACKAGE_ID}::land::create_land`,
-    })
-
-    signAndExecute(
-      { transaction: tx },
-      {
-        onSuccess: async (result) => {
-          const txDetails = await suiClient.waitForTransaction({
-            digest: result.digest,
-            options: { showObjectChanges: true }
-          })
-          
-          const created = txDetails.objectChanges?.find(
-            (change) => change.type === 'created' && 
-            'objectType' in change && 
-            change.objectType.includes('PlayerLand')
-          )
-          
-          if (created && 'objectId' in created) {
-            onLandCreated?.(created.objectId)
-            setTxStatus('🎉 Land created!')
-            fetchUserData()
-          }
-          setTimeout(() => setTxStatus(''), 2000)
-        },
-        onError: (error) => {
-          console.error('Error creating land:', error)
-          setTxStatus('Error: ' + error.message)
-        },
-      }
-    )
-  }
-
   // Create inventory
   const createInventoryOnChain = async () => {
     setTxStatus('Creating inventory...')
