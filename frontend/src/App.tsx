@@ -5,7 +5,7 @@ import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
 import './App.css'
 
-const PACKAGE_ID = '0x45e50719c020cc81a8d2953a9701119a4e71cc48cad819d456ab48579e19041e'
+const PACKAGE_ID = '0xa99401dc6d117667a13b8c923954fbb7b3726bedb47440699ebc23e9ebb9377b'
 const CLOCK_OBJECT = '0x6'
 
 type GameTab = 'game' | 'land'

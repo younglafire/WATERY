@@ -46,7 +46,7 @@ module contract::land {
     // LAND CREATION
     // ============================================================================
 
-    /// Create first land for new player (called after create_player)
+    /// Create first land for new player
     entry fun create_first_land(
         player: &mut PlayerAccount,
         clock: &Clock,

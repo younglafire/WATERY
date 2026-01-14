@@ -48,7 +48,7 @@ module contract::player {
     // ============================================================================
 
     /// Create a new player account with inventory
-    /// This is the main entry point - player gets inventory automatically
+    /// Note: Land is created separately - see init module for combined creation
     entry fun create_player(clock: &Clock, ctx: &mut TxContext) {
         let sender = ctx.sender();
         let now = sui::clock::timestamp_ms(clock);
@@ -61,7 +61,7 @@ module contract::player {
             total_seeds_earned: 0,
             total_games_played: 0,
             inventory_slots: utils::initial_inventory_slots(),
-            land_count: 1,  // Start with 1 land
+            land_count: 1,  // Will have 1 land after calling create_first_land
             active_land_index: 0,
             created_at: now,
         };
@@ -74,12 +74,10 @@ module contract::player {
             max_slots: utils::initial_inventory_slots(),
         };
         
-        // Note: Land is created separately by land module
-        // Player should call create_first_land after this
-        
         let player_id = object::id(&player);
+        let inventory_id = object::id(&inventory);
         
-        events::emit_player_created(sender, player_id, object::id(&inventory));
+        events::emit_player_created(sender, player_id, inventory_id);
         
         transfer::transfer(player, sender);
         transfer::transfer(inventory, sender);

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x45e50719c020cc81a8d2953a9701119a4e71cc48cad819d456ab48579e19041e'
+const PACKAGE_ID = '0xa99401dc6d117667a13b8c923954fbb7b3726bedb47440699ebc23e9ebb9377b'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 const GROW_TIME_MS = 15000 // 15 seconds
@@ -273,7 +273,28 @@ export default function PlayerLand({
 
   // Plant in single slot
   const plantInSlot = async () => {
-    if (!playerAccountId || !landId || !playerInventoryId || plantSlotIndex === null) return
+    console.log('plantInSlot called', { playerAccountId, landId, playerInventoryId, plantSlotIndex, seedsToPlant })
+    
+    if (!playerAccountId) {
+      setTxStatus('❌ Player account not found')
+      return
+    }
+    if (!landId) {
+      setTxStatus('❌ Land not found')
+      return
+    }
+    if (!playerInventoryId) {
+      setTxStatus('❌ Inventory not found')
+      return
+    }
+    if (plantSlotIndex === null) {
+      setTxStatus('❌ No slot selected')
+      return
+    }
+    if (playerSeeds < seedsToPlant) {
+      setTxStatus(`❌ Not enough seeds! You have ${playerSeeds}, need ${seedsToPlant}`)
+      return
+    }
     
     setTxStatus(`🌱 Planting ${seedsToPlant} seeds in slot ${plantSlotIndex + 1}...`)
     setShowPlantModal(false)
@@ -306,6 +327,7 @@ export default function PlayerLand({
         onError: (error) => {
           console.error('Error planting:', error)
           setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
         },
       }
     )
@@ -313,11 +335,30 @@ export default function PlayerLand({
 
   // Plant all empty slots
   const plantAll = async () => {
-    if (!playerAccountId || !landId || !playerInventoryId) return
+    console.log('plantAll called', { playerAccountId, landId, playerInventoryId, batchSeeds })
+    
+    if (!playerAccountId) {
+      setTxStatus('❌ Player account not found')
+      return
+    }
+    if (!landId) {
+      setTxStatus('❌ Land not found')
+      return
+    }
+    if (!playerInventoryId) {
+      setTxStatus('❌ Inventory not found')
+      return
+    }
     
     const emptyCount = slots.filter(s => !s.fruit).length
     if (emptyCount === 0) {
       setTxStatus('No empty slots!')
+      return
+    }
+    
+    const totalNeeded = batchSeeds * emptyCount
+    if (playerSeeds < totalNeeded) {
+      setTxStatus(`❌ Not enough seeds! You have ${playerSeeds}, need ${totalNeeded}`)
       return
     }
     
@@ -351,6 +392,7 @@ export default function PlayerLand({
         onError: (error) => {
           console.error('Error batch planting:', error)
           setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
         },
       }
     )
@@ -390,23 +432,64 @@ export default function PlayerLand({
     )
   }
 
+  // Mint test seeds (for testing/hackathon)
+  const mintTestSeeds = async () => {
+    if (!playerAccountId) return
+    
+    setTxStatus('🌱 Minting 100 test seeds...')
+    const tx = new Transaction()
+    tx.moveCall({
+      target: `${PACKAGE_ID}::player::mint_seeds`,
+      arguments: [
+        tx.object(playerAccountId),
+        tx.pure.u64(100),
+      ],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async (result) => {
+          await suiClient.waitForTransaction({ digest: result.digest })
+          setTxStatus('🎉 Got 100 seeds!')
+          onDataChanged?.()
+          setTimeout(() => setTxStatus(''), 2000)
+        },
+        onError: (error) => {
+          console.error('Error minting seeds:', error)
+          setTxStatus('Error: ' + error.message)
+        },
+      }
+    )
+  }
+
   const emptySlots = slots.filter(s => !s.fruit).length
   const readySlots = slots.filter(s => s.fruit && currentTime >= s.fruit.plantedAt + GROW_TIME_MS).length
 
   // Click on empty slot
   const handleSlotClick = (slot: Slot) => {
+    console.log('handleSlotClick', { slot, playerSeeds, playerAccountId, landId, playerInventoryId })
+    
     if (!slot.fruit) {
       // Empty slot - open plant modal
       if (playerSeeds > 0) {
+        console.log('Opening plant modal for slot', slot.index)
         setPlantSlotIndex(slot.index)
         setSeedsToPlant(1)
         setShowPlantModal(true)
+      } else {
+        setTxStatus('❌ You need seeds! Play the game or mint test seeds.')
+        setTimeout(() => setTxStatus(''), 3000)
       }
     } else {
       // Has fruit - check if ready, trigger harvest
       const isReady = currentTime >= slot.fruit.plantedAt + GROW_TIME_MS
       if (isReady && playerInventoryId) {
         forceHarvest()
+      } else {
+        const timeLeft = Math.max(0, Math.ceil((slot.fruit.plantedAt + GROW_TIME_MS - currentTime) / 1000))
+        setTxStatus(`⏱️ Still growing... ${timeLeft}s left`)
+        setTimeout(() => setTxStatus(''), 2000)
       }
     }
   }
@@ -425,7 +508,19 @@ export default function PlayerLand({
 
       {/* Seeds Overview */}
       <div className="seeds-section">
-        <h4>🌱 Your Seeds: {playerSeeds}</h4>
+        <div className="seeds-display">
+          <h4>🌱 Your Seeds: {playerSeeds}</h4>
+          {playerAccountId && (
+            <button 
+              onClick={mintTestSeeds} 
+              disabled={isPending}
+              className="mint-test-btn"
+              title="Mint 100 test seeds"
+            >
+              {isPending ? '⏳' : '+ Mint Test Seeds'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* No Land */}
@@ -458,9 +553,20 @@ export default function PlayerLand({
 
           {/* Action Buttons */}
           <div className="land-actions">
-            {emptySlots > 0 && playerSeeds > 0 && (
-              <button onClick={() => setShowBatchModal(true)} disabled={isPending}>
-                🌱 Plant All ({emptySlots} slots)
+            {emptySlots > 0 && (
+              <button 
+                onClick={() => {
+                  if (playerSeeds === 0) {
+                    setTxStatus('❌ You need seeds first! Play the game or mint test seeds.')
+                    setTimeout(() => setTxStatus(''), 3000)
+                    return
+                  }
+                  setShowBatchModal(true)
+                }} 
+                disabled={isPending}
+                className={playerSeeds > 0 ? '' : 'disabled-hint'}
+              >
+                🌱 Plant All ({emptySlots} slots) {playerSeeds === 0 && '- Need seeds!'}
               </button>
             )}
             {readySlots > 0 && playerInventoryId && (
@@ -468,11 +574,19 @@ export default function PlayerLand({
                 🌾 Harvest All ({readySlots} ready)
               </button>
             )}
-            <button onClick={upgradeLand} disabled={isPending || !playerAccountId}>
-              ⬆️ Upgrade Land
+            <button 
+              onClick={upgradeLand} 
+              disabled={isPending || !playerAccountId}
+              title="Costs seeds to upgrade"
+            >
+              ⬆️ Upgrade Land (costs seeds)
             </button>
-            <button onClick={buyNewLand} disabled={isPending || !playerAccountId}>
-              🏡 Buy New Land
+            <button 
+              onClick={buyNewLand} 
+              disabled={isPending || !playerAccountId}
+              title="Costs seeds to buy new land"
+            >
+              🏡 Buy New Land (costs seeds)
             </button>
           </div>
 
