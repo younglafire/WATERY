@@ -10,8 +10,13 @@ const GROW_TIME_MS = 15000 // 15 seconds
 // SeedAdminCap shared object ID (from contract publish)
 const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93f01c39eb79'
 
-// SEED coin has 9 decimals, so multiply by 10^9
+// SEED coin type and decimals
+const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS = 1_000_000_000n
+
+// Costs in whole SEED tokens
+const NEW_LAND_COST = 500n
+const LAND_UPGRADE_BASE_COST = 100n
 
 // Pinata IPFS gateway base URL
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
@@ -132,7 +137,7 @@ export default function PlayerLand({
                 fruitType: Number(slotData.fruit_type || 1),
                 rarity: Number(slotData.rarity || 1),
                 weight: Number(slotData.weight || 100),
-                seedsUsed: Number(slotData.seeds_used || 1),
+                seedsUsed: Math.floor(Number(slotData.seeds_used || 1) / Number(SEED_DECIMALS)),
                 plantedAt: Number(slotData.planted_at || 0),
               }
             })
@@ -219,14 +224,46 @@ export default function PlayerLand({
 
   // Buy additional land
   const buyNewLand = async () => {
-    if (!playerAccountId) return
+    if (!playerAccountId || !account?.address) return
+    
+    const cost = NEW_LAND_COST * SEED_DECIMALS
+    if (BigInt(playerSeeds) * SEED_DECIMALS < cost) {
+      setTxStatus(`❌ Not enough seeds! Need ${NEW_LAND_COST} SEED`)
+      return
+    }
     
     setTxStatus('🏡 Buying new land...')
     const tx = new Transaction()
+    
+    // Split SEED coins from wallet for payment
+    const [paymentCoin] = tx.splitCoins(
+      tx.gas,
+      [tx.pure.u64(0)] // placeholder, we'll use mergeCoins
+    )
+    
+    // Get SEED coins and merge them
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
+    // Use the first coin and split the required amount
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(cost)]
+    )
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::land::buy_new_land`,
       arguments: [
         tx.object(playerAccountId),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
       ],
     })
@@ -250,15 +287,38 @@ export default function PlayerLand({
 
   // Upgrade land to get more slots
   const upgradeLand = async () => {
-    if (!playerAccountId || !landId) return
+    if (!playerAccountId || !landId || !account?.address) return
+    
+    // Cost doubles with each level: 100, 200, 400, 800...
+    const cost = LAND_UPGRADE_BASE_COST * (1n << BigInt(landLevel)) * SEED_DECIMALS
     
     setTxStatus('⬆️ Upgrading land...')
     const tx = new Transaction()
+    
+    // Get SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
+    // Split the required amount
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(cost)]
+    )
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::land::upgrade_land`,
       arguments: [
         tx.object(playerAccountId),
         tx.object(landId),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
       ],
     })
 
@@ -300,6 +360,10 @@ export default function PlayerLand({
       setTxStatus('❌ No slot selected')
       return
     }
+    if (!account?.address) {
+      setTxStatus('❌ Wallet not connected')
+      return
+    }
     if (playerSeeds < seedsToPlant) {
       setTxStatus(`❌ Not enough seeds! You have ${playerSeeds}, need ${seedsToPlant}`)
       return
@@ -309,6 +373,25 @@ export default function PlayerLand({
     setShowPlantModal(false)
     
     const tx = new Transaction()
+    
+    // Get SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
+    // Split the required amount (with decimals)
+    const amountWithDecimals = BigInt(seedsToPlant) * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(amountWithDecimals)]
+    )
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::land::plant_in_slot`,
       arguments: [
@@ -316,7 +399,8 @@ export default function PlayerLand({
         tx.object(landId),
         tx.object(playerInventoryId),
         tx.pure.u64(plantSlotIndex),
-        tx.pure.u64(seedsToPlant),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -358,6 +442,10 @@ export default function PlayerLand({
       setTxStatus('❌ Inventory not found')
       return
     }
+    if (!account?.address) {
+      setTxStatus('❌ Wallet not connected')
+      return
+    }
     
     const emptyCount = slots.filter(s => !s.fruit).length
     if (emptyCount === 0) {
@@ -375,13 +463,34 @@ export default function PlayerLand({
     setShowBatchModal(false)
     
     const tx = new Transaction()
+    
+    // Get SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
+    // Total amount needed (with decimals)
+    const totalAmountWithDecimals = BigInt(totalNeeded) * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(totalAmountWithDecimals)]
+    )
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::land::plant_all`,
       arguments: [
         tx.object(playerAccountId),
         tx.object(landId),
         tx.object(playerInventoryId),
-        tx.pure.u64(batchSeeds),
+        payment,
+        tx.pure.u64(batchSeeds), // Don't multiply by decimals - payment already has it
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
