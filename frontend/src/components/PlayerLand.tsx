@@ -226,22 +226,15 @@ export default function PlayerLand({
   const buyNewLand = async () => {
     if (!playerAccountId || !account?.address) return
     
-    const cost = NEW_LAND_COST * SEED_DECIMALS
-    if (BigInt(playerSeeds) * SEED_DECIMALS < cost) {
-      setTxStatus(`❌ Not enough seeds! Need ${NEW_LAND_COST} SEED`)
+    const costInSeeds = Number(NEW_LAND_COST)
+    if (playerSeeds < costInSeeds) {
+      setTxStatus(`❌ Not enough seeds! Need ${costInSeeds} SEED`)
       return
     }
     
     setTxStatus('🏡 Buying new land...')
-    const tx = new Transaction()
     
-    // Split SEED coins from wallet for payment
-    const [paymentCoin] = tx.splitCoins(
-      tx.gas,
-      [tx.pure.u64(0)] // placeholder, we'll use mergeCoins
-    )
-    
-    // Get SEED coins and merge them
+    // Get all SEED coins
     const seedCoins = await suiClient.getCoins({
       owner: account.address,
       coinType: SEED_COIN_TYPE,
@@ -252,7 +245,16 @@ export default function PlayerLand({
       return
     }
     
-    // Use the first coin and split the required amount
+    const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
+    // Split exact amount needed from merged coin
+    const cost = NEW_LAND_COST * SEED_DECIMALS
     const [payment] = tx.splitCoins(
       tx.object(seedCoins.data[0].coinObjectId),
       [tx.pure.u64(cost)]
@@ -290,12 +292,15 @@ export default function PlayerLand({
     if (!playerAccountId || !landId || !account?.address) return
     
     // Cost doubles with each level: 100, 200, 400, 800...
-    const cost = LAND_UPGRADE_BASE_COST * (1n << BigInt(landLevel)) * SEED_DECIMALS
+    const costInSeeds = Number(LAND_UPGRADE_BASE_COST) * (1 << landLevel)
+    if (playerSeeds < costInSeeds) {
+      setTxStatus(`❌ Not enough seeds! Need ${costInSeeds} SEED`)
+      return
+    }
     
     setTxStatus('⬆️ Upgrading land...')
-    const tx = new Transaction()
     
-    // Get SEED coins
+    // Get all SEED coins
     const seedCoins = await suiClient.getCoins({
       owner: account.address,
       coinType: SEED_COIN_TYPE,
@@ -306,7 +311,16 @@ export default function PlayerLand({
       return
     }
     
+    const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
     // Split the required amount
+    const cost = LAND_UPGRADE_BASE_COST * BigInt(1 << landLevel) * SEED_DECIMALS
     const [payment] = tx.splitCoins(
       tx.object(seedCoins.data[0].coinObjectId),
       [tx.pure.u64(cost)]
@@ -372,9 +386,7 @@ export default function PlayerLand({
     setTxStatus(`🌱 Planting ${seedsToPlant} seeds in slot ${plantSlotIndex + 1}...`)
     setShowPlantModal(false)
     
-    const tx = new Transaction()
-    
-    // Get SEED coins
+    // Get all SEED coins
     const seedCoins = await suiClient.getCoins({
       owner: account.address,
       coinType: SEED_COIN_TYPE,
@@ -383,6 +395,14 @@ export default function PlayerLand({
     if (seedCoins.data.length === 0) {
       setTxStatus('❌ No SEED coins found')
       return
+    }
+    
+    const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
     }
     
     // Split the required amount (with decimals)
@@ -462,9 +482,7 @@ export default function PlayerLand({
     setTxStatus(`🌱 Planting ${batchSeeds} seeds in ${emptyCount} slots...`)
     setShowBatchModal(false)
     
-    const tx = new Transaction()
-    
-    // Get SEED coins
+    // Get all SEED coins
     const seedCoins = await suiClient.getCoins({
       owner: account.address,
       coinType: SEED_COIN_TYPE,
@@ -473,6 +491,14 @@ export default function PlayerLand({
     if (seedCoins.data.length === 0) {
       setTxStatus('❌ No SEED coins found')
       return
+    }
+    
+    const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
     }
     
     // Total amount needed (with decimals)
