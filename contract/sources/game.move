@@ -21,6 +21,7 @@ module contract::game {
     use contract::utils;
     use contract::events;
     use contract::player::{Self, PlayerAccount};
+    use contract::seed::{Self, SeedAdminCap};
 
     // ============================================================================
     // STRUCTS
@@ -208,11 +209,12 @@ module contract::game {
         );
     }
 
-    /// Complete harvest after 5 drops - transfers seeds to player account
+    /// Complete harvest after 5 drops - mints SEED coins to player
     entry fun complete_harvest(
         session: &mut GameSession,
         player_account: &mut PlayerAccount,
-        _ctx: &mut TxContext
+        admin_cap: &mut SeedAdminCap,
+        ctx: &mut TxContext
     ) {
         assert!(!session.game_over, utils::e_game_over());
         assert!(session.is_claiming, utils::e_not_in_claim_mode());
@@ -221,8 +223,13 @@ module contract::game {
         
         let harvested = session.seeds_pending;
         
-        // Transfer seeds to player account
-        player::add_seeds(player_account, harvested);
+        // Mint SEED coins to player
+        if (harvested > 0) {
+            seed::mint_to(admin_cap, harvested, ctx.sender(), ctx);
+        };
+        
+        // Update player stats
+        player::add_seeds_earned(player_account, harvested);
         
         // Reset session state
         session.seeds_pending = 0;

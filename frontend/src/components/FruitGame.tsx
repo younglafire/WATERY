@@ -3,7 +3,13 @@ import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-ki
 import { Transaction } from '@mysten/sui/transactions'
 import Matter from 'matter-js'
 
-const PACKAGE_ID = '0xa99401dc6d117667a13b8c923954fbb7b3726bedb47440699ebc23e9ebb9377b'
+const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
+
+// SeedAdminCap shared object ID (from contract publish)
+const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93f01c39eb79'
+
+// SEED coin has 9 decimals, so multiply by 10^9
+const SEED_DECIMALS = 1_000_000_000n
 
 // Pinata IPFS gateway base URL
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
@@ -140,8 +146,8 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested }: FruitGa
 
   // Mint seeds on-chain
   const mintSeedsOnChain = async () => {
-    if (!account?.address || !playerAccountId) {
-      setTxStatus('❌ Connect wallet and create account first')
+    if (!account?.address) {
+      setTxStatus('❌ Connect wallet first')
       setTimeout(() => setTxStatus(''), 3000)
       return
     }
@@ -154,11 +160,14 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested }: FruitGa
     setTxStatus(`🌱 Minting ${seedsPending} seeds...`)
     const tx = new Transaction()
     
+    // Multiply by 10^9 for 9 decimals
+    const amountWithDecimals = BigInt(seedsPending) * SEED_DECIMALS
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.object(playerAccountId),
-        tx.pure.u64(seedsPending),
+        tx.object(SEED_ADMIN_CAP),
+        tx.pure.u64(amountWithDecimals),
       ],
     })
 

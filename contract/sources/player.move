@@ -2,24 +2,26 @@
 // Module: player
 // Description: Player account system with inventory and land management
 // Players automatically get inventory and first land when creating account
+// Seeds are now a Coin type - see seed.move module
 // ============================================================================
 // SPDX-License-Identifier: Apache-2.0
 
 module contract::player {
     use sui::clock::Clock;
+    use sui::coin::Coin;
     use contract::utils;
     use contract::events;
+    use contract::seed::{Self, SEED, SeedAdminCap};
 
     // ============================================================================
     // STRUCTS
     // ============================================================================
 
-    /// Main player account - holds seeds (main currency) and references
+    /// Main player account - tracks stats (seeds are now Coin<SEED> held in wallet)
     public struct PlayerAccount has key, store {
         id: UID,
         owner: address,
-        seeds: u64,                        // Main currency
-        total_seeds_earned: u64,           // Lifetime earnings
+        total_seeds_earned: u64,           // Lifetime earnings (for stats)
         total_games_played: u64,           // Game count
         inventory_slots: u64,              // Max inventory slots
         land_count: u64,                   // Number of lands owned
@@ -57,7 +59,6 @@ module contract::player {
         let player = PlayerAccount {
             id: object::new(ctx),
             owner: sender,
-            seeds: 0,
             total_seeds_earned: 0,
             total_games_played: 0,
             inventory_slots: utils::initial_inventory_slots(),
@@ -87,30 +88,46 @@ module contract::player {
     // SEED MANAGEMENT
     // ============================================================================
 
-    /// Add seeds to player account (called after game harvest)
-    public(package) fun add_seeds(player: &mut PlayerAccount, amount: u64) {
-        player.seeds = player.seeds + amount;
+    /// Track seeds earned (for stats, actual coins go to wallet)
+    public(package) fun add_seeds_earned(player: &mut PlayerAccount, amount: u64) {
         player.total_seeds_earned = player.total_seeds_earned + amount;
         
-        events::emit_seeds_earned(player.owner, amount, player.seeds);
+        events::emit_seeds_earned(player.owner, amount, player.total_seeds_earned);
     }
 
-    /// Spend seeds from player account
+    /// Spend SEED coins for upgrades/purchases (burns the coins)
     public(package) fun spend_seeds(
-        player: &mut PlayerAccount, 
-        amount: u64, 
-        purpose: vector<u8>
+        admin_cap: &mut SeedAdminCap,
+        payment: Coin<SEED>,
+        amount: u64,
+        purpose: vector<u8>,
+        owner: address,
+        ctx: &mut TxContext
     ) {
-        assert!(player.seeds >= amount, utils::e_insufficient_seeds());
-        player.seeds = player.seeds - amount;
+        let coin_value = seed::value(&payment);
+        assert!(coin_value >= amount, utils::e_insufficient_seeds());
         
-        events::emit_seeds_spent(player.owner, amount, purpose);
+        // If payment is more than needed, return change
+        if (coin_value > amount) {
+            let mut payment_mut = payment;
+            let change = seed::split(&mut payment_mut, coin_value - amount, ctx);
+            transfer::public_transfer(change, owner);
+            seed::burn(admin_cap, payment_mut);
+        } else {
+            seed::burn(admin_cap, payment);
+        };
+        
+        events::emit_seeds_spent(owner, amount, purpose);
     }
 
-    /// External entry to mint seeds (for testing/hackathon)
-    entry fun mint_seeds(player: &mut PlayerAccount, amount: u64, _ctx: &mut TxContext) {
+    /// Entry function to mint seeds (for testing/hackathon)
+    entry fun mint_seeds(
+        admin_cap: &mut SeedAdminCap,
+        amount: u64,
+        ctx: &mut TxContext
+    ) {
         assert!(amount > 0, utils::e_invalid_seed_count());
-        add_seeds(player, amount);
+        seed::mint_to(admin_cap, amount, ctx.sender(), ctx);
     }
 
     // ============================================================================
@@ -167,11 +184,13 @@ module contract::player {
         fruit
     }
 
-    /// Upgrade inventory capacity (costs seeds)
+    /// Upgrade inventory capacity (costs SEED coins)
     entry fun upgrade_inventory(
         player: &mut PlayerAccount,
         inventory: &mut PlayerInventory,
-        _ctx: &mut TxContext
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
+        ctx: &mut TxContext
     ) {
         assert!(
             inventory.max_slots < utils::max_inventory_slots(),
@@ -179,7 +198,7 @@ module contract::player {
         );
         
         let cost = utils::calculate_inventory_upgrade_cost(inventory.max_slots);
-        spend_seeds(player, cost, b"inventory_upgrade");
+        spend_seeds(admin_cap, payment, cost, b"inventory_upgrade", player.owner, ctx);
         
         // Add 5 slots per upgrade
         inventory.max_slots = inventory.max_slots + 5;
@@ -211,10 +230,6 @@ module contract::player {
     // ============================================================================
     // VIEW FUNCTIONS
     // ============================================================================
-
-    public fun get_seeds(player: &PlayerAccount): u64 {
-        player.seeds
-    }
 
     public fun get_total_seeds_earned(player: &PlayerAccount): u64 {
         player.total_seeds_earned

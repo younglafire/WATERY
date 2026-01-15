@@ -2,10 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0xa99401dc6d117667a13b8c923954fbb7b3726bedb47440699ebc23e9ebb9377b'
+const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 const GROW_TIME_MS = 15000 // 15 seconds
+
+// SeedAdminCap shared object ID (from contract publish)
+const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93f01c39eb79'
+
+// SEED coin has 9 decimals, so multiply by 10^9
+const SEED_DECIMALS = 1_000_000_000n
 
 // Pinata IPFS gateway base URL
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
@@ -437,15 +443,17 @@ export default function PlayerLand({
 
   // Mint test seeds (for testing/hackathon)
   const mintTestSeeds = async () => {
-    if (!playerAccountId) return
-    
     setTxStatus('🌱 Minting 100 test seeds...')
     const tx = new Transaction()
+    
+    // Multiply by 10^9 for 9 decimals
+    const amountWithDecimals = 100n * SEED_DECIMALS
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.object(playerAccountId),
-        tx.pure.u64(100),
+        tx.object(SEED_ADMIN_CAP),
+        tx.pure.u64(amountWithDecimals),
       ],
     })
 

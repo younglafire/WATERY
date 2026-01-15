@@ -14,9 +14,11 @@
 module contract::land {
     use sui::random::{Random, new_generator};
     use sui::clock::Clock;
+    use sui::coin::Coin;
     use contract::utils;
     use contract::events;
     use contract::player::{Self, PlayerAccount, PlayerInventory};
+    use contract::seed::{Self, SEED, SeedAdminCap};
 
     // ============================================================================
     // STRUCTS
@@ -82,9 +84,11 @@ module contract::land {
         transfer::transfer(land, sender);
     }
 
-    /// Buy a new land (costs seeds)
+    /// Buy a new land (costs SEED coins)
     entry fun buy_new_land(
         player: &mut PlayerAccount,
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -95,9 +99,9 @@ module contract::land {
         // Check max lands limit
         assert!(land_count < utils::max_lands_per_player(), utils::e_max_lands_reached());
         
-        // Spend seeds
+        // Spend SEED coins
         let cost = utils::new_land_cost();
-        player::spend_seeds(player, cost, b"new_land");
+        player::spend_seeds(admin_cap, payment, cost, b"new_land", sender, ctx);
         
         // Create new land
         let initial_slots = utils::initial_land_slots();
@@ -126,18 +130,20 @@ module contract::land {
         transfer::transfer(land, sender);
     }
 
-    /// Upgrade land to get more slots (costs seeds)
+    /// Upgrade land to get more slots (costs SEED coins)
     entry fun upgrade_land(
-        player: &mut PlayerAccount,
+        player: &PlayerAccount,
         land: &mut PlayerLand,
-        _ctx: &mut TxContext
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
+        ctx: &mut TxContext
     ) {
         // Check not at max
         assert!(land.max_slots < utils::max_land_slots(), utils::e_land_max_level());
         
-        // Calculate cost and spend seeds
+        // Calculate cost and spend SEED coins
         let cost = utils::calculate_land_upgrade_cost(land.level);
-        player::spend_seeds(player, cost, b"land_upgrade");
+        player::spend_seeds(admin_cap, payment, cost, b"land_upgrade", player::get_owner(player), ctx);
         
         // Upgrade land
         land.level = land.level + 1;
@@ -182,14 +188,15 @@ module contract::land {
     // PLANTING
     // ============================================================================
 
-    /// Plant seeds in a specific slot
+    /// Plant seeds in a specific slot (costs SEED coins)
     /// Also triggers auto-harvest for any ready fruits
     entry fun plant_in_slot(
-        player: &mut PlayerAccount,
+        _player: &PlayerAccount,
         land: &mut PlayerLand,
         inventory: &mut PlayerInventory,
         slot_index: u64,
-        seeds_to_use: u64,
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
         clock: &Clock,
         r: &Random,
         ctx: &mut TxContext
@@ -200,11 +207,12 @@ module contract::land {
         // Validate slot
         assert!(slot_index < land.max_slots, utils::e_invalid_slot());
         assert!(option::is_none(land.slots.borrow(slot_index)), utils::e_slot_occupied());
-        assert!(seeds_to_use > 0, utils::e_invalid_seed_count());
-        assert!(player::get_seeds(player) >= seeds_to_use, utils::e_insufficient_seeds());
         
-        // Spend seeds
-        player::spend_seeds(player, seeds_to_use, b"plant");
+        let seeds_to_use = seed::value(&payment);
+        assert!(seeds_to_use > 0, utils::e_invalid_seed_count());
+        
+        // Spend SEED coins (burn them)
+        seed::burn(admin_cap, payment);
         
         // Generate random fruit attributes
         let mut generator = new_generator(r, ctx);
@@ -237,12 +245,14 @@ module contract::land {
         );
     }
 
-    /// Plant in all empty slots at once
+    /// Plant in all empty slots at once (costs SEED coins)
     entry fun plant_all(
-        player: &mut PlayerAccount,
+        player: &PlayerAccount,
         land: &mut PlayerLand,
         inventory: &mut PlayerInventory,
+        payment: Coin<SEED>,
         seeds_per_slot: u64,
+        admin_cap: &mut SeedAdminCap,
         clock: &Clock,
         r: &Random,
         ctx: &mut TxContext
@@ -262,12 +272,20 @@ module contract::land {
             i = i + 1;
         };
         
-        // Check we have enough seeds
+        // Check payment is enough for all slots
         let total_seeds = empty_count * seeds_per_slot;
-        assert!(player::get_seeds(player) >= total_seeds, utils::e_insufficient_seeds());
+        let payment_value = seed::value(&payment);
+        assert!(payment_value >= total_seeds, utils::e_insufficient_seeds());
         
-        // Spend all seeds at once
-        player::spend_seeds(player, total_seeds, b"plant_batch");
+        // Burn exact amount, return change if any
+        if (payment_value > total_seeds) {
+            let mut payment_mut = payment;
+            let change = seed::split(&mut payment_mut, payment_value - total_seeds, ctx);
+            transfer::public_transfer(change, player::get_owner(player));
+            seed::burn(admin_cap, payment_mut);
+        } else {
+            seed::burn(admin_cap, payment);
+        };
         
         // Plant in all empty slots
         let mut generator = new_generator(r, ctx);

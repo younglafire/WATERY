@@ -5,8 +5,12 @@ import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
 import './App.css'
 
-const PACKAGE_ID = '0xa99401dc6d117667a13b8c923954fbb7b3726bedb47440699ebc23e9ebb9377b'
+const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
 const CLOCK_OBJECT = '0x6'
+
+// SEED coin type for balance checking
+const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
+const SEED_DECIMALS = 1_000_000_000 // 9 decimals
 
 type GameTab = 'game' | 'land'
 
@@ -34,6 +38,7 @@ function App() {
     }
 
     try {
+      // Get owned objects
       const objects = await suiClient.getOwnedObjects({
         owner: account.address,
         options: { showType: true, showContent: true },
@@ -42,17 +47,12 @@ function App() {
       let foundAccount: string | null = null
       let foundInventory: string | null = null
       let foundLand: string | null = null
-      let seeds = 0
 
       for (const obj of objects.data) {
         // Only use objects from CURRENT package
         if (obj.data?.type?.includes(PACKAGE_ID)) {
           if (obj.data.type.includes('PlayerAccount')) {
             foundAccount = obj.data.objectId
-            const content = obj.data?.content
-            if (content && 'fields' in content) {
-              seeds = Number((content.fields as { seeds: string }).seeds || 0)
-            }
           }
           if (obj.data.type.includes('PlayerInventory')) {
             foundInventory = obj.data.objectId
@@ -62,6 +62,13 @@ function App() {
           }
         }
       }
+      
+      // Get SEED coin balance from wallet
+      const seedBalance = await suiClient.getBalance({
+        owner: account.address,
+        coinType: SEED_COIN_TYPE,
+      })
+      const seeds = Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS)
       
       setPlayerAccountId(foundAccount)
       setPlayerInventoryId(foundInventory)
@@ -114,7 +121,7 @@ function App() {
       <header className="app-header">
         <h1>🍉 SUI Fruit Merge</h1>
         <div className="header-right">
-          {playerSeeds > 0 && (
+          {playerSeeds >= 0 && (
             <span className="total-harvested">🌱 Seeds: {playerSeeds}</span>
           )}
           <ConnectButton />
