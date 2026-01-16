@@ -153,7 +153,11 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
         tx.pure.u64(amountWithDecimals),
       ],
     })

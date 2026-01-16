@@ -221,7 +221,11 @@ export default function PlayerLand({
       target: `${PACKAGE_ID}::land::buy_new_land`,
       arguments: [
         payment,
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
         tx.object(CLOCK_OBJECT),
       ],
     })
@@ -287,7 +291,11 @@ export default function PlayerLand({
       arguments: [
         tx.object(landId),
         payment,
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
       ],
     })
 
@@ -365,7 +373,11 @@ export default function PlayerLand({
         tx.object(landId),
         tx.pure.u64(plantSlotIndex),
         payment,
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -454,7 +466,11 @@ export default function PlayerLand({
         tx.object(landId),
         payment,
         tx.pure.u64(batchSeeds), // Don't multiply by decimals - payment already has it
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -522,7 +538,11 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.object(SEED_ADMIN_CAP),
+        tx.sharedObjectRef({
+          objectId: SEED_ADMIN_CAP,
+          mutable: true,
+          initialSharedVersion: 731570534,
+        }),
         tx.pure.u64(amountWithDecimals),
       ],
     })
