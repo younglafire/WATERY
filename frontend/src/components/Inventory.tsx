@@ -2,11 +2,19 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
-const SEED_ADMIN_CAP = '0xeb6298b5d70482a58a1d2bfb50cb0cf67d51f19017069ec4060db91dac312876'
+const PACKAGE_ID = '0x4f67380241e80b7c11704bb2a83873ce7616b379c5dc6ca25d28686ef1d30320'
+const SEED_ADMIN_CAP = '0xb0764f9ea32f00ca5fc65a93e968e67f7fc3b10db154787e07312a07c610738e'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS = 1_000_000_000n
-const INVENTORY_UPGRADE_COST = 100n // 100 SEED per upgrade
+const INVENTORY_UPGRADE_BASE_COST = 200n // Base cost, increases with level
+const INVENTORY_SLOTS_PER_UPGRADE = 10
+const MAX_INVENTORY_SLOTS = 200
+
+// Calculate upgrade cost based on current slots
+const calculateUpgradeCost = (currentSlots: number): bigint => {
+  const upgrades = Math.floor((currentSlots - 20) / INVENTORY_SLOTS_PER_UPGRADE)
+  return INVENTORY_UPGRADE_BASE_COST * BigInt(upgrades + 1)
+}
 
 const FRUITS = [
   { level: 1, emoji: '🍒', name: 'Cherry' },
@@ -167,8 +175,9 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
       tx.mergeCoins(coinIds[0], coinIds.slice(1))
     }
     
-    // Split payment
-    const amountWithDecimals = INVENTORY_UPGRADE_COST * SEED_DECIMALS
+    // Split payment (cost increases with each upgrade)
+    const upgradeCost = calculateUpgradeCost(maxSlots)
+    const amountWithDecimals = upgradeCost * SEED_DECIMALS
     const [payment] = tx.splitCoins(
       tx.object(seedCoins.data[0].coinObjectId),
       [tx.pure.u64(amountWithDecimals)]
@@ -189,7 +198,7 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
       {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
-          setTxStatus('✅ Inventory upgraded! +5 slots')
+          setTxStatus(`✅ Inventory upgraded! +${INVENTORY_SLOTS_PER_UPGRADE} slots`)
           onUpdate?.()
           setTimeout(() => setTxStatus(''), 3000)
         },
@@ -204,6 +213,8 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
 
   const isFull = fruits.length >= maxSlots
   const isNearFull = fruits.length >= maxSlots - 2
+  const nextUpgradeCost = calculateUpgradeCost(maxSlots)
+  const canUpgrade = maxSlots < MAX_INVENTORY_SLOTS
 
   return (
     <div className="inventory-container">
@@ -213,14 +224,17 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
           <span className={`capacity-text ${isFull ? 'full' : isNearFull ? 'warning' : ''}`}>
             {fruits.length} / {maxSlots} slots
           </span>
-          {maxSlots < 50 && (
+          {canUpgrade && (
             <button 
               className="upgrade-btn" 
               onClick={upgradeInventory}
               disabled={isPending}
             >
-              ⬆️ Upgrade (+5 slots, 100 SEED)
+              ⬆️ Upgrade (+{INVENTORY_SLOTS_PER_UPGRADE} slots, {nextUpgradeCost.toString()} SEED)
             </button>
+          )}
+          {!canUpgrade && (
+            <span className="max-reached">MAX LEVEL</span>
           )}
         </div>
       </div>

@@ -7,7 +7,7 @@ import Inventory from './components/Inventory'
 import Market from './components/Market'
 import './App.css'
 
-const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
+const PACKAGE_ID = '0x4f67380241e80b7c11704bb2a83873ce7616b379c5dc6ca25d28686ef1d30320'
 const CLOCK_OBJECT = '0x6'
 
 // SEED coin type for balance checking

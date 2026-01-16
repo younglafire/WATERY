@@ -3,7 +3,7 @@ import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-ki
 import { Transaction } from '@mysten/sui/transactions'
 import Matter from 'matter-js'
 
-const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
+const PACKAGE_ID = '0x4f67380241e80b7c11704bb2a83873ce7616b379c5dc6ca25d28686ef1d30320'
 
 // SeedAdminCap shared object ID (from contract publish)
 const SEED_ADMIN_CAP = '0xeb6298b5d70482a58a1d2bfb50cb0cf67d51f19017069ec4060db91dac312876'
