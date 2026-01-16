@@ -62,8 +62,9 @@ module contract::utils {
     
     // Inventory System
     const INITIAL_INVENTORY_SLOTS: u64 = 20;
-    const MAX_INVENTORY_SLOTS: u64 = 50;
-    const INVENTORY_UPGRADE_COST: u64 = 100;     // Seeds per upgrade
+    const MAX_INVENTORY_SLOTS: u64 = 200;
+    const INVENTORY_UPGRADE_COST: u64 = 200;     // Base cost, increases with level
+    const INVENTORY_SLOTS_PER_UPGRADE: u64 = 10; // Slots gained per upgrade
 
     // ============================================================================
     // FRUIT TYPES (Levels 1-10)
@@ -359,11 +360,15 @@ module contract::utils {
         LAND_UPGRADE_COST_BASE * (1 << (current_level as u8)) // 100, 200, 400, 800...
     }
 
-    /// Calculate inventory upgrade cost
+    /// Calculate inventory upgrade cost (progressive - gets more expensive)
     public fun calculate_inventory_upgrade_cost(current_slots: u64): u64 {
-        let upgrades = (current_slots - INITIAL_INVENTORY_SLOTS) / 5;
+        let upgrades = (current_slots - INITIAL_INVENTORY_SLOTS) / INVENTORY_SLOTS_PER_UPGRADE;
+        // Base cost * (1 + upgrade_level), so 200, 400, 600, 800...
         INVENTORY_UPGRADE_COST * (upgrades + 1)
     }
+    
+    /// Get slots added per inventory upgrade
+    public fun inventory_slots_per_upgrade(): u64 { INVENTORY_SLOTS_PER_UPGRADE }
 
     /// Get current timestamp from clock
     public fun get_timestamp(clock: &Clock): u64 {

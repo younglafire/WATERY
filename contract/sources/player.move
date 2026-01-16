@@ -201,8 +201,9 @@ module contract::player {
         let cost = utils::calculate_inventory_upgrade_cost(inventory.max_slots);
         spend_seeds(admin_cap, payment, cost, b"inventory_upgrade", player.owner, ctx);
         
-        // Add 5 slots per upgrade
-        inventory.max_slots = inventory.max_slots + 5;
+        // Add slots per upgrade (from utils constant)
+        let slots_to_add = utils::inventory_slots_per_upgrade();
+        inventory.max_slots = inventory.max_slots + slots_to_add;
         player.inventory_slots = inventory.max_slots;
         
         events::emit_inventory_upgraded(player.owner, inventory.max_slots, cost);

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module contract::market {
-    use sui::clock::Clock; // Add Clock
+    use sui::clock::Clock;
     use contract::player::{Self, PlayerInventory};
     use contract::utils;
 
@@ -13,20 +13,20 @@ module contract::market {
     // MERGE LOGIC
     // ============================================================================
 
-    /// Merge 10 fruits of the same type into 1 fruit of the next level
-    /// The weight of the new fruit is the sum of the weights of the input fruits
-    /// This creates "heavy" fruits that can have high rarity
+    /// Merge 10 fruits of the same type into 1 heavier fruit of the SAME type
+    /// The weight of the new fruit is ~50% of the total weight of the input fruits
+    /// This creates premium "heavy" fruits with high rarity
+    /// Example: 10 apples weighing 200g each (2kg total) -> 1 apple weighing ~1kg
     public entry fun merge_fruits(
         inventory: &mut PlayerInventory,
         fruit_type: u8,
         count: u64, // Number of merges to perform (e.g. 1 = consume 10, produce 1)
-        clock: &Clock, // Added Clock parameter
-        ctx: &mut TxContext
+        clock: &Clock,
+        _ctx: &mut TxContext
     ) {
-        // Validation
-        assert!(fruit_type < utils::max_fruit_level(), utils::e_invalid_fruit_level());
+        // Validation - fruit type must be valid (1-10)
+        assert!(fruit_type >= 1 && fruit_type <= utils::max_fruit_level(), utils::e_invalid_fruit_level());
         
-        let target_fruit_type = fruit_type + 1;
         let mut merges_performed = 0;
 
         while (merges_performed < count) {
@@ -47,34 +47,30 @@ module contract::market {
             assert!(indices_to_remove.length() == 10, utils::e_insufficient_fruits()); 
 
             // 2. Remove fruits and sum their weight
-            let mut total_weight = 0;
+            let mut total_weight = 0u64;
             let mut k = 0;
             while (k < 10) {
-                // Indices in 'indices_to_remove' are sorted Descending (e.g. 15, 12, 5...)
-                // Removing index 15 doesn't affect index 12 or 5.
-                // Removing index 12 doesn't affect index 5.
-                // So we safely iterate and remove.
                 let index_to_remove = *indices_to_remove.borrow(k);
-                let removed_fruit = player::remove_fruit_from_inventory(inventory, index_to_remove); // This consumes the fruit
+                let removed_fruit = player::remove_fruit_from_inventory(inventory, index_to_remove);
                 total_weight = total_weight + player::get_fruit_weight(&removed_fruit);
-                
-                // InventoryFruit has 'drop' ability, so it's destroyed here automatically
-                // But we need to make sure 'removed_fruit' is dropped.
-                // Move 2024 automatically drops structs with 'drop'.
                 k = k + 1;
             };
 
-            // 3. Create new fruit
-            // Weight is balanced (sum).
-            // Calculate new rarity based on the new weight and target type
-            let new_rarity = utils::calculate_weight_based_rarity(target_fruit_type, total_weight);
+            // 3. Calculate new weight (50% of total - realistic compression)
+            // 10 fruits merged into 1, but we preserve half the total weight
+            // This represents a "premium" condensed fruit
+            let new_weight = total_weight / 2;
             
-            // Add to inventory
+            // 4. Calculate rarity based on the new weight for this fruit type
+            // Heavier = rarer, since normal fruits are much lighter
+            let new_rarity = utils::calculate_weight_based_rarity(fruit_type, new_weight);
+            
+            // 5. Add the merged fruit back to inventory (SAME fruit type)
             player::add_fruit_to_inventory(
                 inventory,
-                target_fruit_type,
+                fruit_type,  // Same fruit type, not upgraded
                 new_rarity,
-                total_weight,
+                new_weight,
                 clock
             );
 
