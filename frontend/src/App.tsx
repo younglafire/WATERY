@@ -3,6 +3,7 @@ import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransa
 import { Transaction } from '@mysten/sui/transactions'
 import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
+import Inventory from './components/Inventory'
 import './App.css'
 
 const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
@@ -12,7 +13,7 @@ const CLOCK_OBJECT = '0x6'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS = 1_000_000_000 // 9 decimals
 
-type GameTab = 'game' | 'land'
+type GameTab = 'game' | 'land' | 'inventory'
 
 function App() {
   const account = useCurrentAccount()
@@ -197,6 +198,13 @@ function App() {
                   <span className="icon">🌍</span>
                   <span className="label">FARM</span>
                 </button>
+                <button 
+                  className={activeTab === 'inventory' ? 'active' : ''} 
+                  onClick={() => handleTabChange('inventory')}
+                >
+                  <span className="icon">🎒</span>
+                  <span className="label">INVENTORY</span>
+                </button>
               </nav>
               <div className="sidebar-footer">
                 <div className="seeds-display">
@@ -226,7 +234,7 @@ function App() {
                       onGameStateChange={setIsGameActive}
                     />
                   </div>
-                ) : (
+                ) : activeTab === 'land' ? (
                   <div className="land-container">
                     <PlayerLand 
                       playerAccountId={playerAccountId} 
@@ -234,6 +242,12 @@ function App() {
                       landId={landId} 
                       playerSeeds={playerSeeds} 
                       onDataChanged={loadUserObjects} 
+                    />
+                  </div>
+                ) : (
+                  <div className="inventory-wrapper">
+                    <Inventory 
+                      playerInventoryId={playerInventoryId}
                     />
                   </div>
                 )}
@@ -245,12 +259,12 @@ function App() {
           {showExitModal && (
             <div className="modal-overlay">
               <div className="modal-content">
-                <h3>⚠️ Cảnh báo</h3>
-                <p>Bạn đang trong quá trình chơi game. Nếu chuyển tab bây giờ, bạn sẽ mất tiến trình hiện tại.</p>
-                <p><strong>Bạn có muốn thoát không?</strong></p>
+                <h3>⚠️ Warning</h3>
+                <p>You are currently playing a game. If you switch tabs now, you will lose your current progress.</p>
+                <p><strong>Do you want to exit?</strong></p>
                 <div className="modal-buttons">
-                  <button className="btn-cancel" onClick={cancelTabChange}>Không</button>
-                  <button className="btn-confirm" onClick={confirmTabChange}>Có</button>
+                  <button className="btn-cancel" onClick={cancelTabChange}>No</button>
+                  <button className="btn-confirm" onClick={confirmTabChange}>Yes</button>
                 </div>
               </div>
             </div>

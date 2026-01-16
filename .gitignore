@@ -58,3 +58,6 @@ contract/build/
 tmp/
 temp/
 *.tmp
+    
+#Recovered files
+recoveryphase.txt
