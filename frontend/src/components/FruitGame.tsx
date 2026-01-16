@@ -56,12 +56,11 @@ interface FruitBody extends Matter.Body {
 }
 
 interface FruitGameProps {
-  playerAccountId?: string
   onSeedsHarvested?: (seeds: number) => void
   onGameStateChange?: (isActive: boolean) => void
 }
 
-export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameStateChange }: FruitGameProps) {
+export default function FruitGame({ onSeedsHarvested, onGameStateChange }: FruitGameProps) {
   const account = useCurrentAccount()
   const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
   

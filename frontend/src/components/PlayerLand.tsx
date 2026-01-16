@@ -55,16 +55,12 @@ interface InventoryFruit {
 }
 
 interface PlayerLandProps {
-  playerAccountId: string | null
-  playerInventoryId: string | null
   landId: string | null
   playerSeeds: number
   onDataChanged?: () => void
 }
 
 export default function PlayerLand({ 
-  playerAccountId, 
-  playerInventoryId, 
   landId, 
   playerSeeds,
   onDataChanged 
@@ -190,14 +186,11 @@ export default function PlayerLand({
 
   // Create first land (for new players)
   const createFirstLand = async () => {
-    if (!playerAccountId) return
-    
     setTxStatus('🏡 Creating your first land...')
     const tx = new Transaction()
     tx.moveCall({
       target: `${PACKAGE_ID}::land::create_first_land`,
       arguments: [
-        tx.object(playerAccountId),
         tx.object(CLOCK_OBJECT),
       ],
     })
@@ -260,7 +253,6 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::land::buy_new_land`,
       arguments: [
-        tx.object(playerAccountId),
         payment,
         tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
@@ -326,7 +318,6 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::land::upgrade_land`,
       arguments: [
-        tx.object(playerAccountId),
         tx.object(landId),
         payment,
         tx.object(SEED_ADMIN_CAP),
@@ -412,9 +403,7 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::land::plant_in_slot`,
       arguments: [
-        tx.object(playerAccountId),
         tx.object(landId),
-        tx.object(playerInventoryId),
         tx.pure.u64(plantSlotIndex),
         payment,
         tx.object(SEED_ADMIN_CAP),
@@ -508,9 +497,7 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::land::plant_all`,
       arguments: [
-        tx.object(playerAccountId),
         tx.object(landId),
-        tx.object(playerInventoryId),
         payment,
         tx.pure.u64(batchSeeds), // Don't multiply by decimals - payment already has it
         tx.object(SEED_ADMIN_CAP),
@@ -541,7 +528,7 @@ export default function PlayerLand({
 
   // Force harvest (triggers auto-harvest)
   const forceHarvest = async () => {
-    if (!landId || !playerInventoryId) return
+    if (!landId) return
     
     setTxStatus('🌾 Harvesting ready fruits...')
     const tx = new Transaction()
@@ -549,7 +536,6 @@ export default function PlayerLand({
       target: `${PACKAGE_ID}::land::harvest_ready`,
       arguments: [
         tx.object(landId),
-        tx.object(playerInventoryId),
         tx.object(CLOCK_OBJECT),
       ],
     })

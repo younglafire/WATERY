@@ -121,6 +121,7 @@ module contract::player {
     }
 
     /// Entry function to mint seeds (for testing/hackathon)
+    /// No account required - seeds go directly to wallet
     entry fun mint_seeds(
         admin_cap: &mut SeedAdminCap,
         amount: u64,

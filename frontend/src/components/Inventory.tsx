@@ -25,10 +25,9 @@ interface InventoryFruit {
 }
 
 interface InventoryProps {
-  playerInventoryId: string | null
 }
 
-export default function Inventory({ playerInventoryId }: InventoryProps) {
+export default function Inventory() {
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const [inventory, setInventory] = useState<InventoryFruit[]>([])

@@ -21,9 +21,7 @@ function App() {
   const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
   const [activeTab, setActiveTab] = useState<GameTab>('game')
   
-  // Player objects from the new contract structure
-  const [playerAccountId, setPlayerAccountId] = useState<string | null>(null)
-  const [playerInventoryId, setPlayerInventoryId] = useState<string | null>(null)
+  // Player objects (no account required)
   const [landId, setLandId] = useState<string | null>(null)
   const [playerSeeds, setPlayerSeeds] = useState(0)
   const [txStatus, setTxStatus] = useState('')
@@ -36,8 +34,6 @@ function App() {
   // Load player objects from chain
   const loadUserObjects = useCallback(async () => {
     if (!account?.address) {
-      setPlayerAccountId(null)
-      setPlayerInventoryId(null)
       setLandId(null)
       setPlayerSeeds(0)
       return
@@ -50,21 +46,11 @@ function App() {
         options: { showType: true, showContent: true },
       })
 
-      let foundAccount: string | null = null
-      let foundInventory: string | null = null
       let foundLand: string | null = null
 
       for (const obj of objects.data) {
-        if (obj.data?.type?.includes(PACKAGE_ID)) {
-          if (obj.data.type.includes('PlayerAccount')) {
-            foundAccount = obj.data.objectId
-          }
-          if (obj.data.type.includes('PlayerInventory')) {
-            foundInventory = obj.data.objectId
-          }
-          if (obj.data.type.includes('PlayerLand')) {
-            foundLand = obj.data.objectId
-          }
+        if (obj.data?.type?.includes(`${PACKAGE_ID}::land::PlayerLand`)) {
+          foundLand = obj.data.objectId
         }
       }
       
@@ -74,8 +60,6 @@ function App() {
       })
       const seeds = Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS)
       
-      setPlayerAccountId(foundAccount)
-      setPlayerInventoryId(foundInventory)
       setLandId(foundLand)
       setPlayerSeeds(seeds)
     } catch (error) {
@@ -86,33 +70,6 @@ function App() {
   useEffect(() => {
     loadUserObjects()
   }, [loadUserObjects])
-
-  // Create player account (entry point for new players)
-  const createPlayerAccount = async () => {
-    setTxStatus('🎮 Creating player account...')
-    const tx = new Transaction()
-    tx.moveCall({
-      target: `${PACKAGE_ID}::player::create_player`,
-      arguments: [tx.object(CLOCK_OBJECT)],
-    })
-
-    signAndExecute(
-      { transaction: tx },
-      {
-        onSuccess: async (result) => {
-          await suiClient.waitForTransaction({ digest: result.digest })
-          setTxStatus('🎉 Account created! Now create your land.')
-          await loadUserObjects()
-          setTimeout(() => setTxStatus(''), 3000)
-        },
-        onError: (error) => {
-          console.error('Error creating player:', error)
-          setTxStatus('Error: ' + error.message)
-          setTimeout(() => setTxStatus(''), 5000)
-        },
-      }
-    )
-  }
 
   const handleSeedsHarvested = (seeds: number) => {
     setPlayerSeeds(prev => prev + seeds)
@@ -229,7 +186,6 @@ function App() {
                 {activeTab === 'game' ? (
                   <div className="game-container">
                     <FruitGame 
-                      playerAccountId={playerAccountId ?? undefined} 
                       onSeedsHarvested={handleSeedsHarvested}
                       onGameStateChange={setIsGameActive}
                     />
@@ -237,8 +193,6 @@ function App() {
                 ) : activeTab === 'land' ? (
                   <div className="land-container">
                     <PlayerLand 
-                      playerAccountId={playerAccountId} 
-                      playerInventoryId={playerInventoryId}
                       landId={landId} 
                       playerSeeds={playerSeeds} 
                       onDataChanged={loadUserObjects} 
@@ -246,9 +200,7 @@ function App() {
                   </div>
                 ) : (
                   <div className="inventory-wrapper">
-                    <Inventory 
-                      playerInventoryId={playerInventoryId}
-                    />
+                    <Inventory />
                   </div>
                 )}
               </main>
