@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0xebb2a971f21d87770364ed9bf697357045add4ec3b113f05bf61f2460230726d'
+const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
 const CLOCK_OBJECT = '0x6'
 
 // Copied from FruitGame.tsx
@@ -57,12 +57,16 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger }: Market
            // fields.fruits is the vector
            const fields = obj.data.content.fields as any
            const fruits = fields.fruits || []
-           // fruits matches the struct structure
-           setInventoryFruits(fruits.map((f: any) => ({
-             fruit_type: Number(f.fruit_type),
-             rarity: Number(f.rarity),
-             weight: Number(f.weight)
-           })))
+           // Each fruit in the vector has a nested 'fields' structure from SUI
+           setInventoryFruits(fruits.map((f: any) => {
+             // Handle both direct fields and nested fields structure
+             const fruitData = f.fields || f
+             return {
+               fruit_type: Number(fruitData.fruit_type || 0),
+               rarity: Number(fruitData.rarity || 1),
+               weight: Number(fruitData.weight || 100)
+             }
+           }))
         }
       } catch (err) {
         console.error("Failed to load inventory", err)

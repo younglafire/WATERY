@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0xebb2a971f21d87770364ed9bf697357045add4ec3b113f05bf61f2460230726d'
+const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 const GROW_TIME_MS = 15000 // 15 seconds
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x1928336a338b80e7a24c442d95848bef46e954fd860c1dc19e055f3f6d7a6433'
+const SEED_ADMIN_CAP = '0xeb6298b5d70482a58a1d2bfb50cb0cf67d51f19017069ec4060db91dac312876'
 
 // SEED coin type and decimals
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
@@ -56,12 +56,14 @@ interface InventoryFruit {
 
 interface PlayerLandProps {
   landId: string | null
+  inventoryId: string | null
   playerSeeds: number
   onDataChanged?: () => void
 }
 
 export default function PlayerLand({ 
   landId, 
+  inventoryId,
   playerSeeds,
   onDataChanged 
 }: PlayerLandProps) {
@@ -221,11 +223,7 @@ export default function PlayerLand({
       target: `${PACKAGE_ID}::land::buy_new_land`,
       arguments: [
         payment,
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
       ],
     })
@@ -291,11 +289,7 @@ export default function PlayerLand({
       arguments: [
         tx.object(landId),
         payment,
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
       ],
     })
 
@@ -373,11 +367,7 @@ export default function PlayerLand({
         tx.object(landId),
         tx.pure.u64(plantSlotIndex),
         payment,
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -466,11 +456,7 @@ export default function PlayerLand({
         tx.object(landId),
         payment,
         tx.pure.u64(batchSeeds), // Don't multiply by decimals - payment already has it
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -497,8 +483,39 @@ export default function PlayerLand({
 
   // Force harvest (triggers auto-harvest)
   const forceHarvest = async () => {
-    if (!landId || !inventoryId) {
-      if (!inventoryId) setTxStatus('Wait for inventory to load...')
+    console.log('forceHarvest called', { landId, inventoryId })
+    
+    if (!landId) {
+      setTxStatus('❌ Land not found')
+      setTimeout(() => setTxStatus(''), 3000)
+      return
+    }
+    
+    if (!inventoryId) {
+      setTxStatus('❌ Inventory not found. Creating player account...')
+      // Auto-create player account (which includes inventory)
+      const tx = new Transaction()
+      tx.moveCall({
+        target: `${PACKAGE_ID}::player::create_player`,
+        arguments: [
+          tx.object(CLOCK_OBJECT),
+        ],
+      })
+      signAndExecute(
+        { transaction: tx },
+        {
+          onSuccess: async (result) => {
+            await suiClient.waitForTransaction({ digest: result.digest })
+            setTxStatus('✅ Account created! Now try harvesting again.')
+            onDataChanged?.()
+            setTimeout(() => setTxStatus(''), 3000)
+          },
+          onError: (error) => {
+            console.error('Error creating player:', error)
+            setTxStatus('Error: ' + error.message)
+          },
+        }
+      )
       return
     }
     
@@ -526,6 +543,7 @@ export default function PlayerLand({
         onError: (error) => {
           console.error('Error harvesting:', error)
           setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
         },
       }
     )
@@ -542,11 +560,7 @@ export default function PlayerLand({
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
         tx.pure.u64(amountWithDecimals),
       ],
     })

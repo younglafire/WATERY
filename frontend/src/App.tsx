@@ -7,7 +7,7 @@ import Inventory from './components/Inventory'
 import Market from './components/Market'
 import './App.css'
 
-const PACKAGE_ID = '0xebb2a971f21d87770364ed9bf697357045add4ec3b113f05bf61f2460230726d'
+const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
 const CLOCK_OBJECT = '0x6'
 
 // SEED coin type for balance checking
@@ -199,31 +199,51 @@ function App() {
               </header>
 
               <main className="content-area">
-                {activeTab === 'game' ? (
-                  <div className="game-container">
-                    <FruitGame 
-                      onSeedsHarvested={handleSeedsHarvested}
-                      onGameStateChange={setIsGameActive}
-                    />
-                  </div>
-                ) : activeTab === 'land' ? (
-                  <div className="land-container">
-                    <PlayerLand 
-                      landId={landId} 
-                      inventoryId={inventoryId}
-                      playerSeeds={playerSeeds} 
-                      onDataChanged={loadUserObjects} 
-                    />
-                  </div>
-                ) : activeTab === 'market' ? (
-                  <div className="market-wrapper">
-                    <Market inventoryId={inventoryId} onUpdate={loadUserObjects} refreshTrigger={refreshTrigger} />
-                  </div>
-                ) : (
-                  <div className="inventory-wrapper">
-                    <Inventory inventoryId={inventoryId} refreshTrigger={refreshTrigger} />
-                  </div>
-                )}
+                {(() => {
+                  switch (activeTab) {
+                    case 'game':
+                      return (
+                        <div className="game-container">
+                          <FruitGame 
+                            onSeedsHarvested={handleSeedsHarvested}
+                            onGameStateChange={setIsGameActive}
+                          />
+                        </div>
+                      )
+                    case 'land':
+                      return (
+                        <div className="land-container">
+                          <PlayerLand 
+                            landId={landId} 
+                            inventoryId={inventoryId}
+                            playerSeeds={playerSeeds} 
+                            onDataChanged={loadUserObjects} 
+                          />
+                        </div>
+                      )
+                    case 'market':
+                      return (
+                        <div className="market-wrapper">
+                          <Market 
+                            inventoryId={inventoryId} 
+                            onUpdate={loadUserObjects} 
+                            refreshTrigger={refreshTrigger} 
+                          />
+                        </div>
+                      )
+                    case 'inventory':
+                    default:
+                      return (
+                        <div className="inventory-wrapper">
+                          <Inventory 
+                            inventoryId={inventoryId} 
+                            refreshTrigger={refreshTrigger}
+                            onUpdate={loadUserObjects}
+                          />
+                        </div>
+                      )
+                  }
+                })()}
               </main>
             </div>
           </div>

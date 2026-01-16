@@ -3,10 +3,10 @@ import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-ki
 import { Transaction } from '@mysten/sui/transactions'
 import Matter from 'matter-js'
 
-const PACKAGE_ID = '0xebb2a971f21d87770364ed9bf697357045add4ec3b113f05bf61f2460230726d'
+const PACKAGE_ID = '0x313d967c79f30588c9743cb57ac728783854ba9914347273956fe5e3a68597ba'
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x1928336a338b80e7a24c442d95848bef46e954fd860c1dc19e055f3f6d7a6433'
+const SEED_ADMIN_CAP = '0xeb6298b5d70482a58a1d2bfb50cb0cf67d51f19017069ec4060db91dac312876'
 
 // SEED coin has 9 decimals, so multiply by 10^9
 const SEED_DECIMALS = 1_000_000_000n
@@ -153,11 +153,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     tx.moveCall({
       target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.sharedObjectRef({
-          objectId: SEED_ADMIN_CAP,
-          mutable: true,
-          initialSharedVersion: 731570534,
-        }),
+        tx.object(SEED_ADMIN_CAP),
         tx.pure.u64(amountWithDecimals),
       ],
     })
