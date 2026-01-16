@@ -1,20 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 
-// Pinata IPFS gateway base URL
-const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
-
 const FRUITS = [
-  { level: 1, image: `${IPFS_GATEWAY}/bafkreicydu6guwunucel3v5miduloc62s5pjsyirh5pxw5zjrnzcgdsap4`, name: 'Cherry' },
-  { level: 2, image: `${IPFS_GATEWAY}/bafkreifvpkhlj53igt66rcyzylffbfbcdl7nqfqypxdjrxvhpwl3rmpgu4`, name: 'Grape' },
-  { level: 3, image: `${IPFS_GATEWAY}/bafkreibenssqrrj3ctd6bfuycn66ozwrtzt23b3atwegjnt5wkqcnfrndi`, name: 'Orange' },
-  { level: 4, image: `${IPFS_GATEWAY}/bafkreiarh47cw5m442fh76qkaws23uk7ztte5wyswqi2qnbgje5pkrcfme`, name: 'Lemon' },
-  { level: 5, image: `${IPFS_GATEWAY}/bafkreibz6wuhdung3neha7jyyf7323qgjrtsvi3y5bixqtk32hawzvf35i`, name: 'Apple' },
-  { level: 6, image: `${IPFS_GATEWAY}/bafkreifkvji2k4oyyxo3fyggkn5dvbuouvip765jk5kfa6ewt37tqkwda4`, name: 'Pear' },
-  { level: 7, image: `${IPFS_GATEWAY}/bafkreihz77f36frdk7nq332g7zblwt2ctca4cvrr53awr6rybtlp56ohvy`, name: 'Peach' },
-  { level: 8, image: `${IPFS_GATEWAY}/bafkreigkdamx6cylhgcthhrhx5p4rb4otkybrhyvsprvk2huyrnxrm2uya`, name: 'Pineapple' },
-  { level: 9, image: `${IPFS_GATEWAY}/bafkreifefcjgleils74ujmmjlqakteiwaiotxc4sioeyrkkeul6wmqfka4`, name: 'Melon' },
-  { level: 10, image: `${IPFS_GATEWAY}/bafybeib4oogwh4auyotbqfcp4bxj4qcjw4xq5htpuafbyjeifuu3dcfkha`, name: 'Watermelon' },
+  { level: 1, emoji: '🍒', name: 'Cherry' },
+  { level: 2, emoji: '🍇', name: 'Grape' },
+  { level: 3, emoji: '🍊', name: 'Orange' },
+  { level: 4, emoji: '🍋', name: 'Lemon' },
+  { level: 5, emoji: '🍎', name: 'Apple' },
+  { level: 6, emoji: '🍐', name: 'Pear' },
+  { level: 7, emoji: '🍑', name: 'Peach' },
+  { level: 8, emoji: '🍍', name: 'Pineapple' },
+  { level: 9, emoji: '🍈', name: 'Melon' },
+  { level: 10, emoji: '🍉', name: 'Watermelon' },
 ]
 
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
@@ -146,7 +143,7 @@ export default function Inventory({ playerInventoryId }: InventoryProps) {
               return (
                 <div key={fruitType} className="fruit-group-card">
                   <div className="fruit-group-header">
-                    <img src={fruit?.image} alt={fruit?.name} className="fruit-group-icon" />
+                    <div className="fruit-group-icon">{fruit?.emoji}</div>
                     <div className="fruit-group-info">
                       <h3>{fruit?.name || `Fruit ${fruitType}`}</h3>
                       <p className="fruit-count">{fruits.length} collected</p>
@@ -157,7 +154,7 @@ export default function Inventory({ playerInventoryId }: InventoryProps) {
                     {fruits.map((item, idx) => (
                       <div key={idx} className="fruit-item">
                         <div className="fruit-item-image">
-                          <img src={fruit?.image} alt={fruit?.name} />
+                          <div className="fruit-emoji">{fruit?.emoji}</div>
                         </div>
                         <div className="fruit-item-details">
                           <div className="fruit-rarity" style={{ color: RARITY_COLORS[item.rarity] }}>

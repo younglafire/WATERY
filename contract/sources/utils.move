@@ -80,14 +80,58 @@ module contract::utils {
     const WATERMELON: u8 = 10; // 🍉
 
     // ============================================================================
+    // FRUIT WEIGHT RANGES (in grams) - Based on real fruit weights
+    // ============================================================================
+    
+    // Cherry: 5-15g (normal), >15g (rare), >25g (legendary)
+    const CHERRY_BASE_MIN: u64 = 5;
+    const CHERRY_BASE_MAX: u64 = 15;
+    
+    // Grape: 2-5g (normal), >5g (rare), >8g (legendary)
+    const GRAPE_BASE_MIN: u64 = 2;
+    const GRAPE_BASE_MAX: u64 = 5;
+    
+    // Orange: 130-200g (normal), >200g (rare), >300g (legendary)
+    const ORANGE_BASE_MIN: u64 = 130;
+    const ORANGE_BASE_MAX: u64 = 200;
+    
+    // Lemon: 60-100g (normal), >100g (rare), >150g (legendary)
+    const LEMON_BASE_MIN: u64 = 60;
+    const LEMON_BASE_MAX: u64 = 100;
+    
+    // Apple: 150-250g (normal), >250g (rare), >350g (legendary)
+    const APPLE_BASE_MIN: u64 = 150;
+    const APPLE_BASE_MAX: u64 = 250;
+    
+    // Pear: 180-280g (normal), >280g (rare), >400g (legendary)
+    const PEAR_BASE_MIN: u64 = 180;
+    const PEAR_BASE_MAX: u64 = 280;
+    
+    // Peach: 120-180g (normal), >180g (rare), >250g (legendary)
+    const PEACH_BASE_MIN: u64 = 120;
+    const PEACH_BASE_MAX: u64 = 180;
+    
+    // Pineapple: 900-1500g (normal), >1500g (rare), >2000g (legendary)
+    const PINEAPPLE_BASE_MIN: u64 = 900;
+    const PINEAPPLE_BASE_MAX: u64 = 1500;
+    
+    // Melon: 1000-2000g (normal), >2000g (rare), >3000g (legendary)
+    const MELON_BASE_MIN: u64 = 1000;
+    const MELON_BASE_MAX: u64 = 2000;
+    
+    // Watermelon: 3000-6000g (normal), >6000g (rare), >9000g (legendary)
+    const WATERMELON_BASE_MIN: u64 = 3000;
+    const WATERMELON_BASE_MAX: u64 = 6000;
+
+    // ============================================================================
     // RARITY LEVELS
     // ============================================================================
     
-    const RARITY_COMMON: u8 = 1;      // 50% chance
-    const RARITY_UNCOMMON: u8 = 2;    // 25% chance
-    const RARITY_RARE: u8 = 3;        // 15% chance
-    const RARITY_EPIC: u8 = 4;        // 8% chance
-    const RARITY_LEGENDARY: u8 = 5;   // 2% chance
+    const RARITY_COMMON: u8 = 1;      // Normal weight range
+    const RARITY_UNCOMMON: u8 = 2;    // Slightly above normal
+    const RARITY_RARE: u8 = 3;        // Significantly above normal
+    const RARITY_EPIC: u8 = 4;        // Very heavy for the fruit type
+    const RARITY_LEGENDARY: u8 = 5;   // Exceptionally heavy
 
     // Rarity thresholds (out of 100)
     const RARITY_THRESHOLD_UNCOMMON: u64 = 50;
@@ -187,8 +231,108 @@ module contract::utils {
         }
     }
 
-    /// Calculate rarity based on roll and seeds invested
-    /// More seeds = better chance for high rarity
+    /// Get base weight range for a fruit type
+    /// Returns (min_weight, max_weight) in grams
+    public fun get_fruit_weight_range(fruit_type: u8): (u64, u64) {
+        if (fruit_type == CHERRY) {
+            (CHERRY_BASE_MIN, CHERRY_BASE_MAX)
+        } else if (fruit_type == GRAPE) {
+            (GRAPE_BASE_MIN, GRAPE_BASE_MAX)
+        } else if (fruit_type == ORANGE) {
+            (ORANGE_BASE_MIN, ORANGE_BASE_MAX)
+        } else if (fruit_type == LEMON) {
+            (LEMON_BASE_MIN, LEMON_BASE_MAX)
+        } else if (fruit_type == APPLE) {
+            (APPLE_BASE_MIN, APPLE_BASE_MAX)
+        } else if (fruit_type == PEAR) {
+            (PEAR_BASE_MIN, PEAR_BASE_MAX)
+        } else if (fruit_type == PEACH) {
+            (PEACH_BASE_MIN, PEACH_BASE_MAX)
+        } else if (fruit_type == PINEAPPLE) {
+            (PINEAPPLE_BASE_MIN, PINEAPPLE_BASE_MAX)
+        } else if (fruit_type == MELON) {
+            (MELON_BASE_MIN, MELON_BASE_MAX)
+        } else if (fruit_type == WATERMELON) {
+            (WATERMELON_BASE_MIN, WATERMELON_BASE_MAX)
+        } else {
+            // Default to apple range
+            (APPLE_BASE_MIN, APPLE_BASE_MAX)
+        }
+    }
+
+    /// Generate a random weight for a fruit type based on seeds planted
+    /// More seeds = higher chance of heavier fruit
+    public fun generate_fruit_weight(
+        fruit_type: u8,
+        seeds_planted: u64,
+        random_value: u64
+    ): u64 {
+        let (base_min, base_max) = get_fruit_weight_range(fruit_type);
+        let base_range = base_max - base_min;
+        
+        // Base random weight within normal range
+        let random_offset = (random_value % base_range);
+        let base_weight = base_min + random_offset;
+        
+        // Seeds can increase weight beyond normal range
+        // Each seed adds 1% chance to exceed normal weight
+        let seed_bonus = (seeds_planted * base_range) / 100;
+        
+        // Additional random bonus (can go up to 3x the base range for legendary weights)
+        let extra_random = (random_value / 100) % (base_range * 3);
+        let bonus_weight = ((seed_bonus + extra_random) * random_value) / 10000;
+        
+        base_weight + bonus_weight
+    }
+
+    /// Calculate rarity based on weight relative to fruit type
+    /// Bigger fruits are LESS impressive when heavy (watermelon vs cherry)
+    public fun calculate_weight_based_rarity(fruit_type: u8, weight: u64): u8 {
+        let (base_min, base_max) = get_fruit_weight_range(fruit_type);
+        
+        // Calculate how much the weight exceeds the normal range
+        if (weight <= base_max) {
+            // Within normal range = common
+            RARITY_COMMON
+        } else {
+            // Calculate percentage over the normal max weight
+            let excess = weight - base_max;
+            let base_range = base_max - base_min;
+            
+            // For small fruits (cherry, grape), being heavy is more impressive
+            // For large fruits (watermelon), you need to be MUCH heavier to be impressive
+            let weight_threshold_multiplier = if (fruit_type <= GRAPE) {
+                1  // Small fruits: 1x multiplier
+            } else if (fruit_type <= LEMON) {
+                2  // Medium-small fruits: 2x multiplier
+            } else if (fruit_type <= PEACH) {
+                3  // Medium fruits: 3x multiplier
+            } else if (fruit_type <= PINEAPPLE) {
+                5  // Large fruits: 5x multiplier
+            } else {
+                7  // Very large fruits: 7x multiplier
+            };
+            
+            // Calculate rarity score (0-100+)
+            let rarity_score = (excess * 100) / (base_range * weight_threshold_multiplier);
+            
+            if (rarity_score >= 200) {
+                RARITY_LEGENDARY  // >200% over = legendary
+            } else if (rarity_score >= 100) {
+                RARITY_EPIC       // 100-200% over = epic
+            } else if (rarity_score >= 50) {
+                RARITY_RARE       // 50-100% over = rare
+            } else if (rarity_score >= 20) {
+                RARITY_UNCOMMON   // 20-50% over = uncommon
+            } else {
+                RARITY_COMMON     // <20% over = common
+            }
+        }
+    }
+
+    /// OLD: Calculate rarity based on roll and seeds invested
+    /// DEPRECATED: Use calculate_weight_based_rarity instead
+    /// Kept for backward compatibility
     public fun calculate_rarity(roll: u64, seeds_planted: u64): u8 {
         // Bonus from seeds: each 2 seeds = +1 to roll
         let bonus = seeds_planted / 2;

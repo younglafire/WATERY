@@ -217,10 +217,13 @@ module contract::land {
         // Generate random fruit attributes
         let mut generator = new_generator(r, ctx);
         let fruit_type = sui::random::generate_u8_in_range(&mut generator, 1, 10);
-        let rarity_roll = sui::random::generate_u64_in_range(&mut generator, 1, 100);
-        let rarity = utils::calculate_rarity(rarity_roll, seeds_to_use);
-        let base_weight = sui::random::generate_u64_in_range(&mut generator, 100, 500);
-        let weight = base_weight + (seeds_to_use * 5) + ((rarity as u64) * 50);
+        
+        // Generate weight based on fruit type and seeds invested
+        let random_weight_value = sui::random::generate_u64_in_range(&mut generator, 0, 10000);
+        let weight = utils::generate_fruit_weight(fruit_type, seeds_to_use, random_weight_value);
+        
+        // Calculate rarity based on weight relative to fruit type
+        let rarity = utils::calculate_weight_based_rarity(fruit_type, weight);
         
         let now = sui::clock::timestamp_ms(clock);
         
@@ -296,10 +299,13 @@ module contract::land {
             if (option::is_none(land.slots.borrow(i))) {
                 // Generate random fruit
                 let fruit_type = sui::random::generate_u8_in_range(&mut generator, 1, 10);
-                let rarity_roll = sui::random::generate_u64_in_range(&mut generator, 1, 100);
-                let rarity = utils::calculate_rarity(rarity_roll, seeds_per_slot);
-                let base_weight = sui::random::generate_u64_in_range(&mut generator, 100, 500);
-                let weight = base_weight + (seeds_per_slot * 5) + ((rarity as u64) * 50);
+                
+                // Generate weight based on fruit type and seeds invested
+                let random_weight_value = sui::random::generate_u64_in_range(&mut generator, 0, 10000);
+                let weight = utils::generate_fruit_weight(fruit_type, seeds_per_slot, random_weight_value);
+                
+                // Calculate rarity based on weight relative to fruit type
+                let rarity = utils::calculate_weight_based_rarity(fruit_type, weight);
                 
                 let planted = PlantedFruit {
                     fruit_type,

@@ -1417,6 +1417,53 @@ footer {
   background-clip: text;
 }
 
+/* Fruit emoji displays */
+.next-fruit-emoji,
+.fruit-emoji-legend {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.fruit-emoji-preview {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.slot-fruit-emoji {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.inventory-fruit-emoji {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.fruit-group-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.fruit-item-image {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fruit-emoji {
+  font-size: 2.5rem;
+}
+
 /* Đảm bảo nội dung không bị dính sát mép màn hình trên mobile */
 @media (max-width: 600px) {
   .app-main {

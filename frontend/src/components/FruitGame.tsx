@@ -11,9 +11,6 @@ const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93
 // SEED coin has 9 decimals, so multiply by 10^9
 const SEED_DECIMALS = 1_000_000_000n
 
-// Pinata IPFS gateway base URL
-const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
-
 // Game constants
 const GAME_WIDTH = 400
 const GAME_HEIGHT = 600
@@ -30,27 +27,19 @@ const FRICTION = {
   restitution: 0.1,
 }
 
-// Fruit configurations with IPFS images - radius scaled smaller
+// Fruit configurations with emojis
 const FRUITS = [
-  { level: 1, image: `${IPFS_GATEWAY}/bafkreicydu6guwunucel3v5miduloc62s5pjsyirh5pxw5zjrnzcgdsap4`, radius: 15, name: 'Cherry', scoreValue: 1 },
-  { level: 2, image: `${IPFS_GATEWAY}/bafkreifvpkhlj53igt66rcyzylffbfbcdl7nqfqypxdjrxvhpwl3rmpgu4`, radius: 19, name: 'Grape', scoreValue: 3 },
-  { level: 3, image: `${IPFS_GATEWAY}/bafkreibenssqrrj3ctd6bfuycn66ozwrtzt23b3atwegjnt5wkqcnfrndi`, radius: 24, name: 'Orange', scoreValue: 6 },
-  { level: 4, image: `${IPFS_GATEWAY}/bafkreiarh47cw5m442fh76qkaws23uk7ztte5wyswqi2qnbgje5pkrcfme`, radius: 28, name: 'Lemon', scoreValue: 10 },
-  { level: 5, image: `${IPFS_GATEWAY}/bafkreibz6wuhdung3neha7jyyf7323qgjrtsvi3y5bixqtk32hawzvf35i`, radius: 33, name: 'Apple', scoreValue: 15 },
-  { level: 6, image: `${IPFS_GATEWAY}/bafkreifkvji2k4oyyxo3fyggkn5dvbuouvip765jk5kfa6ewt37tqkwda4`, radius: 38, name: 'Pear', scoreValue: 21 },
-  { level: 7, image: `${IPFS_GATEWAY}/bafkreihz77f36frdk7nq332g7zblwt2ctca4cvrr53awr6rybtlp56ohvy`, radius: 44, name: 'Peach', scoreValue: 28 },
-  { level: 8, image: `${IPFS_GATEWAY}/bafkreigkdamx6cylhgcthhrhx5p4rb4otkybrhyvsprvk2huyrnxrm2uya`, radius: 50, name: 'Pineapple', scoreValue: 36 },
-  { level: 9, image: `${IPFS_GATEWAY}/bafkreifefcjgleils74ujmmjlqakteiwaiotxc4sioeyrkkeul6wmqfka4`, radius: 58, name: 'Melon', scoreValue: 45 },
-  { level: 10, image: `${IPFS_GATEWAY}/bafybeib4oogwh4auyotbqfcp4bxj4qcjw4xq5htpuafbyjeifuu3dcfkha`, radius: 68, name: 'Watermelon', scoreValue: 55 },
+  { level: 1, emoji: '🍒', radius: 15, name: 'Cherry', scoreValue: 1 },
+  { level: 2, emoji: '🍇', radius: 19, name: 'Grape', scoreValue: 3 },
+  { level: 3, emoji: '🍊', radius: 24, name: 'Orange', scoreValue: 6 },
+  { level: 4, emoji: '🍋', radius: 28, name: 'Lemon', scoreValue: 10 },
+  { level: 5, emoji: '🍎', radius: 33, name: 'Apple', scoreValue: 15 },
+  { level: 6, emoji: '🍐', radius: 38, name: 'Pear', scoreValue: 21 },
+  { level: 7, emoji: '🍑', radius: 44, name: 'Peach', scoreValue: 28 },
+  { level: 8, emoji: '🍍', radius: 50, name: 'Pineapple', scoreValue: 36 },
+  { level: 9, emoji: '🍈', radius: 58, name: 'Melon', scoreValue: 45 },
+  { level: 10, emoji: '🍉', radius: 68, name: 'Watermelon', scoreValue: 55 },
 ]
-
-// Preload images for sprites
-const preloadImages = () => {
-  FRUITS.forEach(fruit => {
-    const img = new Image()
-    img.src = fruit.image
-  })
-}
 
 // Game states
 const GameState = {
@@ -96,11 +85,6 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
   
   const fruitsMergedRef = useRef<number[]>(Array(FRUITS.length).fill(0))
 
-  // Preload images on mount
-  useEffect(() => {
-    preloadImages()
-  }, [])
-
   // Notify parent component about game state
   useEffect(() => {
     if (onGameStateChange) {
@@ -124,7 +108,7 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
     setScore(newScore)
   }, [])
 
-  // Generate a fruit body with sprite
+  // Generate a fruit body with emoji rendering
   const generateFruitBody = useCallback((x: number, y: number, sizeIndex: number, extraConfig: object = {}): FruitBody => {
     const fruit = FRUITS[sizeIndex]
     const body: FruitBody = Matter.Bodies.circle(x, y, fruit.radius, {
@@ -132,11 +116,7 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
       ...extraConfig,
       label: 'fruit',
       render: {
-        sprite: {
-          texture: fruit.image,
-          xScale: (fruit.radius * 2) / 512,
-          yScale: (fruit.radius * 2) / 512,
-        }
+        fillStyle: 'transparent',
       }
     })
     body.sizeIndex = sizeIndex
@@ -354,6 +334,31 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
     Matter.Runner.run(runner, engine)
     Matter.Render.run(render)
 
+    // Custom emoji rendering
+    Matter.Events.on(render, 'afterRender', () => {
+      const context = render.canvas.getContext('2d')
+      if (!context) return
+
+      const bodies = Matter.Composite.allBodies(engine.world)
+      for (const body of bodies) {
+        const fruitBody = body as FruitBody
+        if (fruitBody.label !== 'fruit') continue
+        if (fruitBody.sizeIndex === undefined) continue
+
+        const fruit = FRUITS[fruitBody.sizeIndex]
+        if (!fruit) continue
+
+        context.save()
+        context.translate(fruitBody.position.x, fruitBody.position.y)
+        context.rotate(fruitBody.angle)
+        context.font = `${fruit.radius * 2}px Arial`
+        context.textAlign = 'center'
+        context.textBaseline = 'middle'
+        context.fillText(fruit.emoji, 0, 0)
+        context.restore()
+      }
+    })
+
     // Initialize first fruit
     const initialFruit = Math.floor(Math.random() * 5)
     currentFruitIndexRef.current = initialFruit
@@ -507,11 +512,9 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
         {gameStarted && !isGameOver && (
           <div className="stat next">
             <span className="stat-label">Next</span>
-            <img 
-              src={FRUITS[displayNextFruit].image} 
-              alt={FRUITS[displayNextFruit].name} 
-              className="next-fruit-img" 
-            />
+            <div className="next-fruit-emoji">
+              {FRUITS[displayNextFruit].emoji}
+            </div>
           </div>
         )}
       </div>
@@ -586,10 +589,10 @@ export default function FruitGame({ playerAccountId, onSeedsHarvested, onGameSta
       {/* Fruit Legend */}
       <div className="fruit-legend">
         {FRUITS.slice(0, 5).map((f) => (
-          <img key={f.level} src={f.image} alt={f.name} title={`${f.name} (Lv${f.level})`} className="fruit-img-legend" />
+          <span key={f.level} className="fruit-emoji-legend" title={`${f.name} (Lv${f.level})`}>{f.emoji}</span>
         ))}
         <span>→</span>
-        <img src={FRUITS[9].image} alt="Watermelon" title="Watermelon (Lv10)" className="fruit-img-legend" />
+        <span className="fruit-emoji-legend" title="Watermelon (Lv10)">{FRUITS[9].emoji}</span>
       </div>
     </div>
   )
