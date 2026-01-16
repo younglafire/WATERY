@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x8c2e15ee27ff6eb423878c0d9a11882f851e0332482b1ae8d796f2c313150eb5'
+const PACKAGE_ID = '0x9bcb6bff172af8a623688549476d840de762c3a3bc914274b7386691edb0cecc'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 const GROW_TIME_MS = 15000 // 15 seconds
