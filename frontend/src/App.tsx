@@ -4,16 +4,18 @@ import { Transaction } from '@mysten/sui/transactions'
 import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
 import Inventory from './components/Inventory'
+import Market from './components/Market'
+import Leaderboard from './components/Leaderboard'
 import './App.css'
 
-const PACKAGE_ID = '0xf16d834033692ce7ab1090506257772e1566810e26e3b72951c7fa4dbf3b45cc'
+const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
 const CLOCK_OBJECT = '0x6'
 
 // SEED coin type for balance checking
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS = 1_000_000_000 // 9 decimals
 
-type GameTab = 'game' | 'land' | 'inventory'
+type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard'
 
 function App() {
   const account = useCurrentAccount()
@@ -23,8 +25,10 @@ function App() {
   
   // Player objects (no account required)
   const [landId, setLandId] = useState<string | null>(null)
+  const [inventoryId, setInventoryId] = useState<string | null>(null)
   const [playerSeeds, setPlayerSeeds] = useState(0)
   const [txStatus, setTxStatus] = useState('')
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   
   // Game state tracking
   const [isGameActive, setIsGameActive] = useState(false)
@@ -47,10 +51,14 @@ function App() {
       })
 
       let foundLand: string | null = null
+      let foundInventory: string | null = null
 
       for (const obj of objects.data) {
         if (obj.data?.type?.includes(`${PACKAGE_ID}::land::PlayerLand`)) {
           foundLand = obj.data.objectId
+        }
+        if (obj.data?.type?.includes(`${PACKAGE_ID}::player::PlayerInventory`)) {
+          foundInventory = obj.data.objectId
         }
       }
       
@@ -61,7 +69,9 @@ function App() {
       const seeds = Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS)
       
       setLandId(foundLand)
+      setInventoryId(foundInventory)
       setPlayerSeeds(seeds)
+      setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error loading user objects:', error)
     }
@@ -162,6 +172,20 @@ function App() {
                   <span className="icon">🎒</span>
                   <span className="label">INVENTORY</span>
                 </button>
+                <button 
+                  className={activeTab === 'market' ? 'active' : ''} 
+                  onClick={() => handleTabChange('market')}
+                >
+                  <span className="icon">🏪</span>
+                  <span className="label">MARKET</span>
+                </button>
+                <button 
+                  className={activeTab === 'leaderboard' ? 'active' : ''} 
+                  onClick={() => handleTabChange('leaderboard')}
+                >
+                  <span className="icon">🏆</span>
+                  <span className="label">LEADERBOARD</span>
+                </button>
               </nav>
               <div className="sidebar-footer">
                 <div className="seeds-display">
@@ -183,26 +207,60 @@ function App() {
               </header>
 
               <main className="content-area">
-                {activeTab === 'game' ? (
-                  <div className="game-container">
-                    <FruitGame 
-                      onSeedsHarvested={handleSeedsHarvested}
-                      onGameStateChange={setIsGameActive}
-                    />
-                  </div>
-                ) : activeTab === 'land' ? (
-                  <div className="land-container">
-                    <PlayerLand 
-                      landId={landId} 
-                      playerSeeds={playerSeeds} 
-                      onDataChanged={loadUserObjects} 
-                    />
-                  </div>
-                ) : (
-                  <div className="inventory-wrapper">
-                    <Inventory />
-                  </div>
-                )}
+                {(() => {
+                  switch (activeTab) {
+                    case 'game':
+                      return (
+                        <div className="game-container">
+                          <FruitGame 
+                            onSeedsHarvested={handleSeedsHarvested}
+                            onGameStateChange={setIsGameActive}
+                          />
+                        </div>
+                      )
+                    case 'land':
+                      return (
+                        <div className="land-container">
+                          <PlayerLand 
+                            landId={landId} 
+                            inventoryId={inventoryId}
+                            playerSeeds={playerSeeds} 
+                            onDataChanged={loadUserObjects} 
+                          />
+                        </div>
+                      )
+                    case 'market':
+                      return (
+                        <div className="market-wrapper">
+                          <Market 
+                            inventoryId={inventoryId} 
+                            onUpdate={loadUserObjects} 
+                            refreshTrigger={refreshTrigger} 
+                          />
+                        </div>
+                      )
+                    case 'leaderboard':
+                      return (
+                        <div className="leaderboard-wrapper">
+                          <Leaderboard 
+                            inventoryId={inventoryId} 
+                            onUpdate={loadUserObjects} 
+                          />
+                        </div>
+                      )
+                    case 'inventory':
+                    default:
+                      return (
+                        <div className="inventory-wrapper">
+                          <Inventory 
+                            inventoryId={inventoryId} 
+                            refreshTrigger={refreshTrigger}
+                            onUpdate={loadUserObjects}
+                          />
+                        </div>
+                      )
+                  }
+                })()}
               </main>
             </div>
           </div>
