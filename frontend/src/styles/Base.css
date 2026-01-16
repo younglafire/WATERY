@@ -1,0 +1,108 @@
+/* ===================================================
+   1. GLOBAL RESET & CORE VARIABLES
+   =================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Ní có thể đưa các mã màu hay dùng vào đây để sau này đổi 1 chỗ là xong */
+  --primary-gradient: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  --sui-gradient: linear-gradient(135deg, #00b894, #00cec9);
+  --harvest-gradient: linear-gradient(135deg, #f39c12, #e67e22);
+  --bg-dark: #0f0f1b;
+  --text-muted: rgba(255, 255, 255, 0.6);
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at center, #1e272e 0%, #0f0f1b 100%);
+  min-height: 100vh;
+  color: #fff;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===================================================
+   2. GLOBAL ANIMATIONS (CÁC HIỆU ỨNG HOẠT ẢNH)
+   =================================================== */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(20deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes pulse-button {
+  0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(108, 92, 231, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); }
+}
+
+/* ===================================================
+   3. BACKGROUND DECORATIONS (TRÁI CÂY BAY)
+   =================================================== */
+.floating-fruits span {
+  position: fixed; 
+  font-size: 3rem;
+  opacity: 0.15;
+  filter: blur(1px);
+  z-index: 0; 
+  pointer-events: none !important; /* Chuột đi xuyên qua lớp này */
+}
+
+.fruit-1 { top: 15%; left: 10%; animation: float 6s infinite ease-in-out; }
+.fruit-2 { top: 70%; left: 80%; animation: float 8s infinite ease-in-out; }
+.fruit-3 { top: 20%; left: 85%; animation: float 7s infinite ease-in-out; }
+
+/* ===================================================
+   4. SCROLLBAR CUSTOM (THANH CUỘN)
+   =================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f0f1b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===================================================
+   5. HELPER CLASSES (LỚP BỔ TRỢ NHANH)
+   =================================================== */
+.hidden { display: none !important; }
+.shake { animation: shake 0.5s ease-in-out; }
+.spinner { animation: spin 1s linear infinite; display: inline-block; }
+.text-center { text-align: center; }

@@ -1,0 +1,168 @@
+/* ===================================================
+   1. MAIN STRUCTURE (BỐ CỤC TỔNG THỂ)
+   =================================================== */
+.game-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.content-area {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===================================================
+   2. SIDEBAR MENU (THANH ĐIỀU HƯỚNG BÊN TRÁI)
+   =================================================== */
+.sidebar-menu {
+  width: 250px;
+  background: rgba(26, 26, 46, 0.9);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-nav button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sidebar-nav button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.sidebar-footer {
+  padding: 1.5rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seeds-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+/* ===================================================
+   3. TOP BAR & HEADER (THANH CÔNG CỤ PHÍA TRÊN)
+   =================================================== */
+.top-bar, .app-header {
+  padding: 1rem 2rem;
+  background: rgba(26, 26, 46, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  height: 70px;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.total-harvested {
+  background: rgba(254, 202, 87, 0.1);
+  border: 1px solid rgba(254, 202, 87, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  color: #feca57;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===================================================
+   4. RESPONSIVE LAYOUT (TỐI ƯU MOBILE)
+   =================================================== */
+@media (max-width: 768px) {
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .sidebar-menu {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-header, .sidebar-footer {
+    display: none; /* Ẩn bớt để dành chỗ cho Menu trên mobile */
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    padding: 0.5rem;
+    justify-content: space-around;
+  }
+
+  .sidebar-nav button {
+    flex-direction: column;
+    padding: 0.5rem;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+
+  .content-area {
+    padding-bottom: 90px; /* Tránh bị menu che mất nội dung */
+  }
+}

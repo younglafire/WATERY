@@ -1,0 +1,47 @@
+/* ===================================================
+   LEADERBOARD STYLING (BẢNG VÀNG)
+   =================================================== */
+.leaderboard-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.25rem;
+  text-align: left;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 2px;
+}
+
+.leaderboard-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+}
+
+/* Hiệu ứng cho Top 3 */
+.rank-1 { color: #feca57; font-size: 1.2rem; }
+.rank-2 { color: #bdc3c7; }
+.rank-3 { color: #cd7f32; }
+
+.player-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.player-address {
+  font-family: 'Courier New', monospace;
+  color: var(--primary);
+}

@@ -1,0 +1,160 @@
+/* ===================================================
+   1. PLAYER LAND CONTAINER (KHUNG CHÍNH)
+   =================================================== */
+.player-land {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.5s ease-out; /* Hiệu ứng hiện trang farm */
+}
+
+.player-land h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #2ecc71; /* Màu xanh lá chủ đạo của farm */
+  font-size: 1.8rem;
+  text-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
+}
+
+/* Thông tin cấp độ đất hoặc chỉ số phụ */
+.land-info {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+}
+
+/* ===================================================
+   2. SLOTS GRID (HỆ THỐNG LƯỚI Ô ĐẤT)
+   =================================================== */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 cột chuẩn */
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+/* Từng ô đất đơn lẻ (Slot Card) */
+.slot {
+  aspect-ratio: 1; /* Giữ ô vuông cân đối */
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+}
+
+.slot:hover {
+  transform: translateY(-8px); /* Hiệu ứng nổi lên khi di chuột */
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===================================================
+   3. SLOT STATES (CÁC TRẠNG THÁI Ô ĐẤT)
+   =================================================== */
+
+/* Trạng thái: Ô đất trống */
+.slot.empty {
+  border-style: dashed;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.slot.empty:hover {
+  border-color: #2ecc71;
+  color: #2ecc71;
+}
+
+/* Trạng thái: Cây đang lớn (Growing) */
+.slot.growing {
+  background: rgba(46, 204, 113, 0.1);
+  border: 2px solid #2ecc71;
+}
+
+.growing-anim {
+  font-size: 2.5rem;
+  animation: wiggle 2s infinite ease-in-out; /* Cây mầm đung đưa */
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50% { transform: rotate(8deg) scale(1.1); }
+}
+
+/* Trạng thái: Sẵn sàng thu hoạch (Ready) */
+.slot.ready {
+  background: rgba(241, 196, 15, 0.15);
+  border: 2px solid #f1c40f;
+  animation: readyGlow 1.5s infinite alternate;
+}
+
+@keyframes readyGlow {
+  from { box-shadow: 0 0 5px rgba(241, 196, 15, 0.2); }
+  to { box-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
+}
+
+/* ===================================================
+   4. LAND SWITCHER & BATCH ACTIONS (ĐIỀU KHIỂN)
+   =================================================== */
+.land-switcher {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  margin-bottom: 15px;
+  overflow-x: auto;
+}
+
+.land-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.land-tab {
+  padding: 8px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.land-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.plant-all-lands-btn {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+  margin-top: 1rem;
+}
+
+/* ===================================================
+   5. RESPONSIVE (TỐI ƯU MOBILE)
+   =================================================== */
+@media (max-width: 600px) {
+  .slots-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 cột trên điện thoại cho dễ bấm */
+    gap: 0.75rem;
+  }
+  
+  .slot {
+    border-radius: 15px;
+  }
+}

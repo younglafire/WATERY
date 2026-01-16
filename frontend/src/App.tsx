@@ -1,85 +1,86 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
+
+// 1. Import các Trang con
 import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
 import Inventory from './components/Inventory'
 import Market from './components/Market'
 import Leaderboard from './components/Leaderboard'
-import './App.css'
+
+// 2. Import bộ 9 file CSS Modular (Đảm bảo ní đã tạo các file này trong thư mục styles)
+import './styles/Base.css'
+import './styles/Layout.css'
+import './styles/Landing.css'
+import './styles/Game.css'
+import './styles/Farm.css'
+import './styles/Inventory.css'
+import './styles/Market.css'
+import './styles/Leaderboard.css'
+import './styles/Components.css'
+
+// 3. Import Assets (Nếu ní đã có file ảnh, nếu chưa có thể dùng emoji tạm)
+import appleImg from './assets/img/Apple.png'
+import watermelonImg from './assets/img/Watermelon.png'
+import lemonImg from './assets/img/Lemon.png'
 
 const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
-const CLOCK_OBJECT = '0x6'
-
-// SEED coin type for balance checking
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
-const SEED_DECIMALS = 1_000_000_000 // 9 decimals
+const SEED_DECIMALS = 1_000_000_000 
 
 type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard'
 
 function App() {
+  /* ===================================================
+     LOGIC BACKEND (GIỮ NGUYÊN)
+     =================================================== */
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
   const [activeTab, setActiveTab] = useState<GameTab>('game')
   
-  // Player objects (no account required)
   const [landId, setLandId] = useState<string | null>(null)
   const [inventoryId, setInventoryId] = useState<string | null>(null)
   const [playerSeeds, setPlayerSeeds] = useState(0)
   const [txStatus, setTxStatus] = useState('')
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   
-  // Game state tracking
   const [isGameActive, setIsGameActive] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
   const [pendingTab, setPendingTab] = useState<GameTab | null>(null)
 
-  // Load player objects from chain
   const loadUserObjects = useCallback(async () => {
     if (!account?.address) {
       setLandId(null)
       setPlayerSeeds(0)
       return
     }
-
     try {
-      // Get owned objects
       const objects = await suiClient.getOwnedObjects({
         owner: account.address,
         options: { showType: true, showContent: true },
       })
-
       let foundLand: string | null = null
       let foundInventory: string | null = null
-
       for (const obj of objects.data) {
-        if (obj.data?.type?.includes(`${PACKAGE_ID}::land::PlayerLand`)) {
-          foundLand = obj.data.objectId
-        }
-        if (obj.data?.type?.includes(`${PACKAGE_ID}::player::PlayerInventory`)) {
-          foundInventory = obj.data.objectId
-        }
+        if (obj.data?.type?.includes(`${PACKAGE_ID}::land::PlayerLand`)) foundLand = obj.data.objectId
+        if (obj.data?.type?.includes(`${PACKAGE_ID}::player::PlayerInventory`)) foundInventory = obj.data.objectId
       }
-      
       const seedBalance = await suiClient.getBalance({
         owner: account.address,
         coinType: SEED_COIN_TYPE,
       })
-      const seeds = Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS)
-      
       setLandId(foundLand)
       setInventoryId(foundInventory)
-      setPlayerSeeds(seeds)
+      setPlayerSeeds(Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS))
       setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error loading user objects:', error)
     }
   }, [account?.address, suiClient])
 
-  useEffect(() => {
-    loadUserObjects()
-  }, [loadUserObjects])
+  useEffect(() => { loadUserObjects() }, [loadUserObjects])
 
   const handleSeedsHarvested = (seeds: number) => {
     setPlayerSeeds(prev => prev + seeds)
@@ -109,191 +110,134 @@ function App() {
     setShowExitModal(false)
   }
 
+  /* ===================================================
+     GIAO DIỆN JSX (VIẾT LẠI MỚI)
+     =================================================== */
   return (
     <div className="app">
+      {/* 1. NỀN TRÁI CÂY BAY (Toàn cục) */}
       <div className="floating-fruits">
-            <span className="fruit-1">🍎</span>
-            <span className="fruit-2">🍇</span>
-            <span className="fruit-3">🍋</span>
-          </div>
+        <span className="fruit-1">🍎</span>
+        <span className="fruit-2">🍇</span>
+        <span className="fruit-3">🍋</span>
+        <span className="fruit-4">🍉</span>
+      </div>
+
       {!account ? (
-        /* --- LANDING PAGE (Pre-connection) --- */
+        /* 2. TRANG CHÀO MỪNG (Khi chưa Connect) */
         <div className="landing-page">
           <div className="landing-content">
             <div className="badge">SUI NETWORK • TESTNET</div>
             <h1 className="hero-title">🍉 FRUIT MERGE <span>V2.0</span></h1>
             <p className="hero-subtitle">
-              The most addictive Merge-to-Earn game on the Sui ecosystem. 
-              Merge fruits, harvest seeds, and build your own digital farm.
+              Trải nghiệm game Merge-to-Earn hấp dẫn nhất hệ sinh thái Sui. 
+              Hợp nhất trái cây, thu hoạch hạt giống và xây dựng nông trại số của riêng bạn.
             </p>
             
             <div className="features-preview">
-              <div className="f-item"><span>🎮</span> Play Game</div>
-              <div className="f-item"><span>🌱</span> Earn Seeds</div>
-              <div className="f-item"><span>🏡</span> Expand Farm</div>
+              <div className="f-item"><span>🎮</span> <p>Play Game</p></div>
+              <div className="f-item"><span>🌱</span> <p>Earn Seeds</p></div>
+              <div className="f-item"><span>🏡</span> <p>Build Farm</p></div>
             </div>
 
             <div className="big-connect-wrapper">
               <ConnectButton />
-              <p className="cta-hint">Connect your Sui wallet to start your journey</p>
+              <p className="cta-hint">Kết nối ví Sui để bắt đầu hành trình của bạn</p>
             </div>
           </div>
-          
-          
         </div>
       ) : (
-        /* --- GAME INTERFACE (Post-connection) --- */
-        <>
-          <div className="game-layout">
-            {/* Sidebar Menu */}
-            <aside className="sidebar-menu">
-              <div className="sidebar-header">
-                <h2>🍉 FRUIT<br/>MERGE</h2>
-              </div>
-              <nav className="sidebar-nav">
-                <button 
-                  className={activeTab === 'game' ? 'active' : ''} 
-                  onClick={() => handleTabChange('game')}
-                >
-                  <span className="icon">🎮</span>
-                  <span className="label">GAME</span>
-                </button>
-                <button 
-                  className={activeTab === 'land' ? 'active' : ''} 
-                  onClick={() => handleTabChange('land')}
-                >
-                  <span className="icon">🌍</span>
-                  <span className="label">FARM</span>
-                </button>
-                <button 
-                  className={activeTab === 'inventory' ? 'active' : ''} 
-                  onClick={() => handleTabChange('inventory')}
-                >
-                  <span className="icon">🎒</span>
-                  <span className="label">INVENTORY</span>
-                </button>
-                <button 
-                  className={activeTab === 'market' ? 'active' : ''} 
-                  onClick={() => handleTabChange('market')}
-                >
-                  <span className="icon">🏪</span>
-                  <span className="label">MARKET</span>
-                </button>
-                <button 
-                  className={activeTab === 'leaderboard' ? 'active' : ''} 
-                  onClick={() => handleTabChange('leaderboard')}
-                >
-                  <span className="icon">🏆</span>
-                  <span className="label">LEADERBOARD</span>
-                </button>
-              </nav>
-              <div className="sidebar-footer">
-                <div className="seeds-display">
-                  <span className="icon">🌱</span>
-                  <div>
-                    <div className="label">Seeds</div>
-                    <div className="value">{playerSeeds.toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Main Content */}
-            <div className="main-content">
-              <header className="top-bar">
-                <div className="top-bar-right">
-                  <ConnectButton />
-                </div>
-              </header>
-
-              <main className="content-area">
-                {(() => {
-                  switch (activeTab) {
-                    case 'game':
-                      return (
-                        <div className="game-container">
-                          <FruitGame 
-                            onSeedsHarvested={handleSeedsHarvested}
-                            onGameStateChange={setIsGameActive}
-                          />
-                        </div>
-                      )
-                    case 'land':
-                      return (
-                        <div className="land-container">
-                          <PlayerLand 
-                            landId={landId} 
-                            inventoryId={inventoryId}
-                            playerSeeds={playerSeeds} 
-                            onDataChanged={loadUserObjects} 
-                          />
-                        </div>
-                      )
-                    case 'market':
-                      return (
-                        <div className="market-wrapper">
-                          <Market 
-                            inventoryId={inventoryId} 
-                            onUpdate={loadUserObjects} 
-                            refreshTrigger={refreshTrigger} 
-                          />
-                        </div>
-                      )
-                    case 'leaderboard':
-                      return (
-                        <div className="leaderboard-wrapper">
-                          <Leaderboard 
-                            inventoryId={inventoryId} 
-                            onUpdate={loadUserObjects} 
-                          />
-                        </div>
-                      )
-                    case 'inventory':
-                    default:
-                      return (
-                        <div className="inventory-wrapper">
-                          <Inventory 
-                            inventoryId={inventoryId} 
-                            refreshTrigger={refreshTrigger}
-                            onUpdate={loadUserObjects}
-                          />
-                        </div>
-                      )
-                  }
-                })()}
-              </main>
+        /* 3. GIAO DIỆN CHÍNH (Sau khi đã Connect) */
+        <div className="game-layout">
+          {/* SIDEBAR / BOTTOM BAR */}
+          <aside className="sidebar-menu">
+            <div className="sidebar-header">
+              <h2>🍉 FRUIT<br/>MERGE</h2>
             </div>
+            
+            <nav className="sidebar-nav">
+              <button className={activeTab === 'game' ? 'active' : ''} onClick={() => handleTabChange('game')}>
+                <span className="icon">🎮</span><span className="label">GAME</span>
+              </button>
+              <button className={activeTab === 'land' ? 'active' : ''} onClick={() => handleTabChange('land')}>
+                <span className="icon">🌍</span><span className="label">FARM</span>
+              </button>
+              <button className={activeTab === 'inventory' ? 'active' : ''} onClick={() => handleTabChange('inventory')}>
+                <span className="icon">🎒</span><span className="label">BAGS</span>
+              </button>
+              <button className={activeTab === 'market' ? 'active' : ''} onClick={() => handleTabChange('market')}>
+                <span className="icon">🏪</span><span className="label">MARKET</span>
+              </button>
+              <button className={activeTab === 'leaderboard' ? 'active' : ''} onClick={() => handleTabChange('leaderboard')}>
+                <span className="icon">🏆</span><span className="label">RANK</span>
+              </button>
+            </nav>
+
+            <div className="sidebar-footer">
+              <div className="seeds-display">
+                <span className="icon">🌱</span>
+                <div>
+                  <div className="label">Your Seeds</div>
+                  <div className="value">{playerSeeds.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* NỘI DUNG CHÍNH */}
+          <div className="main-content">
+            <header className="top-bar">
+              <div className="top-bar-right">
+                <ConnectButton />
+              </div>
+            </header>
+
+            <main className="content-area">
+              {(() => {
+                switch (activeTab) {
+                  case 'game':
+                    return <FruitGame onSeedsHarvested={handleSeedsHarvested} onGameStateChange={setIsGameActive} />
+                  case 'land':
+                    return <PlayerLand landId={landId} inventoryId={inventoryId} playerSeeds={playerSeeds} onDataChanged={loadUserObjects} />
+                  case 'market':
+                    return <Market inventoryId={inventoryId} onUpdate={loadUserObjects} refreshTrigger={refreshTrigger} />
+                  case 'leaderboard':
+                    return <Leaderboard inventoryId={inventoryId} onUpdate={loadUserObjects} />
+                  case 'inventory':
+                  default:
+                    return <Inventory inventoryId={inventoryId} refreshTrigger={refreshTrigger} onUpdate={loadUserObjects} />
+                }
+              })()}
+            </main>
           </div>
-
-          {/* Exit Confirmation Modal */}
-          {showExitModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
-                <h3>⚠️ Warning</h3>
-                <p>You are currently playing a game. If you switch tabs now, you will lose your current progress.</p>
-                <p><strong>Do you want to exit?</strong></p>
-                <div className="modal-buttons">
-                  <button className="btn-cancel" onClick={cancelTabChange}>No</button>
-                  <button className="btn-confirm" onClick={confirmTabChange}>Yes</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
+        </div>
       )}
 
-      {/* Footer Info */}
-      <footer style={{padding: '20px', textAlign: 'center', opacity: 0.5, fontSize: '0.7rem'}}>
-        SUI NETWORK • TESTNET • V2.0
-      </footer>
+      {/* 4. MODALS & NOTIFICATIONS */}
+      {showExitModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>⚠️ Warning</h3>
+            <p>Ní đang trong trận. Nếu chuyển tab bây giờ, mọi tiến trình chơi game sẽ bị mất trắng đó nha!</p>
+            <div className="modal-buttons">
+              <button className="btn-cancel" onClick={cancelTabChange}>Ở LẠI</button>
+              <button className="btn-confirm" onClick={confirmTabChange}>THOÁT</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Transaction Status Toast */}
+      {/* 5. TOAST STATUS */}
       {txStatus && (
         <div className="tx-status">
           {isPending && <span className="spinner">⏳</span>}
-          {txStatus}
+          <span className="status-text">{txStatus}</span>
         </div>
       )}
+
+      <footer className="footer-v2">
+        SUI NETWORK • TESTNET • V2.0
+      </footer>
     </div>
   )
 }
