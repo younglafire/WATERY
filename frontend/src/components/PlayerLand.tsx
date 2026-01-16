@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
+const PACKAGE_ID = '0xf16d834033692ce7ab1090506257772e1566810e26e3b72951c7fa4dbf3b45cc'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 const GROW_TIME_MS = 15000 // 15 seconds
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93f01c39eb79'
+const SEED_ADMIN_CAP = '0x1a1d5266426bf6d06c6def1ec5acf035ddedd5dd6cae1f41c00483e91f64fab4'
 
 // SEED coin type and decimals
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
@@ -708,24 +708,6 @@ export default function PlayerLand({
               )
             })}
           </div>
-
-          {/* Inventory Section */}
-          {inventory.length > 0 && (
-            <div className="inventory-section">
-              <h4>🎒 Your Inventory ({inventory.length} fruits)</h4>
-              <div className="inventory-grid">
-                {inventory.map((fruit, idx) => (
-                  <div key={idx} className="inventory-fruit" style={{ borderColor: RARITY_COLORS[fruit.rarity - 1] }}>
-                    <div className="inventory-fruit-emoji">{FRUITS[fruit.fruitType - 1]?.emoji}</div>
-                    <span className="fruit-rarity" style={{ color: RARITY_COLORS[fruit.rarity - 1] }}>
-                      {RARITIES[fruit.rarity - 1]}
-                    </span>
-                    <span className="fruit-weight">{fruit.weight}g</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       )}
 

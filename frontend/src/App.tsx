@@ -6,7 +6,7 @@ import PlayerLand from './components/PlayerLand'
 import Inventory from './components/Inventory'
 import './App.css'
 
-const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
+const PACKAGE_ID = '0xf16d834033692ce7ab1090506257772e1566810e26e3b72951c7fa4dbf3b45cc'
 const CLOCK_OBJECT = '0x6'
 
 // SEED coin type for balance checking
