@@ -12,8 +12,10 @@
   text-align: center;
   margin-bottom: 1.5rem;
   color: #2ecc71; /* Màu xanh lá chủ đạo của farm */
-  font-size: 1.8rem;
-  text-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #1e8449;
+  text-transform: uppercase;
 }
 
 /* Thông tin cấp độ đất hoặc chỉ số phụ */
@@ -23,10 +25,11 @@
   gap: 2rem;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #2c3e50;
+  border-radius: 20px;
+  border: 4px solid #34495e;
   font-weight: bold;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2);
 }
 
 /* ===================================================
@@ -35,31 +38,37 @@
 .slots-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* 3 cột chuẩn */
-  gap: 1.25rem;
+  gap: 1.5rem;
   margin: 1.5rem 0;
 }
 
 /* Từng ô đất đơn lẻ (Slot Card) */
 .slot {
   aspect-ratio: 1; /* Giữ ô vuông cân đối */
-  border-radius: 20px;
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #ecf0f1; /* Nền sáng cho ô đất */
+  border: 4px solid #bdc3c7;
   padding: 1rem;
+  box-shadow: 0 8px 0 #95a5a6;
 }
 
 .slot:hover {
-  transform: translateY(-8px); /* Hiệu ứng nổi lên khi di chuột */
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px);
+  border-color: #f1c40f;
+  box-shadow: 0 12px 0 #f1c40f; /* Glow vàng khi hover */
+}
+
+.slot:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #95a5a6;
 }
 
 /* ===================================================
@@ -69,40 +78,34 @@
 /* Trạng thái: Ô đất trống */
 .slot.empty {
   border-style: dashed;
-  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
 }
 
 .slot.empty:hover {
   border-color: #2ecc71;
-  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
 }
 
 /* Trạng thái: Cây đang lớn (Growing) */
 .slot.growing {
-  background: rgba(46, 204, 113, 0.1);
-  border: 2px solid #2ecc71;
-}
-
-.growing-anim {
-  font-size: 2.5rem;
-  animation: wiggle 2s infinite ease-in-out; /* Cây mầm đung đưa */
-}
-
-@keyframes wiggle {
-  0%, 100% { transform: rotate(-8deg) scale(1); }
-  50% { transform: rotate(8deg) scale(1.1); }
+  background: #d5f5e3;
+  border-color: #2ecc71;
+  box-shadow: 0 8px 0 #27ae60;
 }
 
 /* Trạng thái: Sẵn sàng thu hoạch (Ready) */
 .slot.ready {
-  background: rgba(241, 196, 15, 0.15);
-  border: 2px solid #f1c40f;
-  animation: readyGlow 1.5s infinite alternate;
+  background: #fcf3cf;
+  border-color: #f1c40f;
+  box-shadow: 0 8px 0 #d35400;
+  animation: readyBounce 1s infinite alternate;
 }
 
-@keyframes readyGlow {
-  from { box-shadow: 0 0 5px rgba(241, 196, 15, 0.2); }
-  to { box-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
+@keyframes readyBounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
 }
 
 /* ===================================================
@@ -113,10 +116,11 @@
   align-items: center;
   gap: 15px;
   padding: 12px 15px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
   margin-bottom: 15px;
   overflow-x: auto;
+  border: 2px solid rgba(255,255,255,0.1);
 }
 
 .land-tabs {
@@ -126,23 +130,68 @@
 
 .land-tab {
   padding: 8px 16px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  border: 3px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
   cursor: pointer;
+  font-weight: bold;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .land-tab.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: #9b59b6;
+  border-color: #fff;
+  box-shadow: 0 4px 0 #6c3483;
+  transform: translateY(-2px);
+}
+
+/* Các nút hành động trong Farm */
+.land-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.land-actions button {
+  padding: 0.8rem 1.2rem;
+  font-size: 0.9rem;
+  background: #34495e; /* Màu mặc định */
+  border: 3px solid #fff;
+  box-shadow: 0 5px 0 #2c3e50;
+  color: white;
+  border-radius: 15px;
+}
+
+.land-actions button:hover {
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+}
+
+.land-actions button:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 transparent;
+}
+
+/* Nút Plant All - Xanh lá */
+.land-actions button:first-child {
+  background: #2ecc71;
+  box-shadow: 0 5px 0 #27ae60;
+}
+
+/* Nút Harvest All - Cam */
+.land-actions button:nth-child(2) {
+  background: #e67e22;
+  box-shadow: 0 5px 0 #d35400;
 }
 
 .plant-all-lands-btn {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
-  margin-top: 1rem;
+  background: #1abc9c !important;
+  box-shadow: 0 5px 0 #16a085 !important;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 /* ===================================================
@@ -151,10 +200,118 @@
 @media (max-width: 600px) {
   .slots-grid {
     grid-template-columns: repeat(2, 1fr); /* 2 cột trên điện thoại cho dễ bấm */
-    gap: 0.75rem;
+    gap: 1rem;
   }
   
   .slot {
-    border-radius: 15px;
+    border-radius: 20px;
   }
+}
+
+/* ===================================================
+   6. IMAGE & OVERLAY STYLES (CSS CHO ẢNH MỚI)
+   =================================================== */
+
+/* --- Base Image Styles --- */
+.soil-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Đảm bảo ảnh không bị méo */
+  transition: transform 0.3s ease;
+}
+
+.slot:hover .soil-img {
+  transform: scale(1.05); /* Phóng to ảnh nền khi hover */
+}
+
+/* --- Overlays for content --- */
+.slot-overlay, .fruit-display {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* --- Empty Slot Specifics --- */
+.slot-empty .slot-icon {
+  font-size: 2rem;
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+.slot-empty .slot-label {
+  font-weight: 900;
+  color: #7f8c8d;
+  text-transform: uppercase;
+}
+
+/* --- Ready Slot Specifics --- */
+.fruit-display .fruit-img-ready {
+  width: 70%; /* To hơn chút cho đã mắt */
+  height: auto;
+  margin-bottom: 0.5rem;
+  /* NO ANIMATION FOR FRUIT IMAGE AS REQUESTED */
+}
+
+.slot-ready .slot-name {
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #d35400;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.8);
+}
+.slot-ready .slot-stats {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+.slot-ready .slot-harvest {
+  position: absolute;
+  bottom: 10px;
+  background: #e74c3c;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #c0392b;
+}
+
+/* --- Growing Slot Specifics --- */
+.slot-growing .growth-timer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #27ae60;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.slot-growing .growth-progress {
+  width: 80%;
+  height: 12px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+  margin: 0.5rem 0;
+  border: 2px solid #fff;
+}
+.slot-growing .growth-bar {
+  height: 100%;
+  background: #2ecc71;
+  border-radius: 8px;
+  transition: width 0.5s linear;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
+}
+.slot-growing .slot-seeds {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #27ae60;
 }

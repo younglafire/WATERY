@@ -2,6 +2,18 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
+// Fruit Assets
+import imgCherry from '../assets/fruit/Cherry.png'
+import imgGrape from '../assets/fruit/Nho.png'
+import imgOrange from '../assets/fruit/Cam.png'
+import imgLemon from '../assets/fruit/Chanh.png'
+import imgApple from '../assets/fruit/Táo.png'
+import imgPear from '../assets/fruit/Lê.png'
+import imgPeach from '../assets/fruit/Đào.png'
+import imgPineapple from '../assets/fruit/Thơm.png'
+import imgMelon from '../assets/fruit/Dưa lưới.png'
+import imgWatermelon from '../assets/fruit/Dưa hấu.png'
+
 const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
 const SEED_ADMIN_CAP = '0x63a07081520fe716d6a411c773d40313e79aaff63e07e3bff3cf129151b3246d'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
@@ -17,16 +29,16 @@ const calculateUpgradeCost = (currentSlots: number): bigint => {
 }
 
 const FRUITS = [
-  { level: 1, emoji: '🍒', name: 'Cherry' },
-  { level: 2, emoji: '🍇', name: 'Grape' },
-  { level: 3, emoji: '🍊', name: 'Orange' },
-  { level: 4, emoji: '🍋', name: 'Lemon' },
-  { level: 5, emoji: '🍎', name: 'Apple' },
-  { level: 6, emoji: '🍐', name: 'Pear' },
-  { level: 7, emoji: '🍑', name: 'Peach' },
-  { level: 8, emoji: '🍍', name: 'Pineapple' },
-  { level: 9, emoji: '🍈', name: 'Melon' },
-  { level: 10, emoji: '🍉', name: 'Watermelon' },
+  { level: 1, image: imgCherry, name: 'Cherry' },
+  { level: 2, image: imgGrape, name: 'Grape' },
+  { level: 3, image: imgOrange, name: 'Orange' },
+  { level: 4, image: imgLemon, name: 'Lemon' },
+  { level: 5, image: imgApple, name: 'Apple' },
+  { level: 6, image: imgPear, name: 'Pear' },
+  { level: 7, image: imgPeach, name: 'Peach' },
+  { level: 8, image: imgPineapple, name: 'Pineapple' },
+  { level: 9, image: imgMelon, name: 'Melon' },
+  { level: 10, image: imgWatermelon, name: 'Watermelon' },
 ]
 
 interface InventoryFruit {
@@ -265,7 +277,8 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
                 className={`filter-btn ${selectedType === type ? 'active' : ''}`}
                 onClick={() => setSelectedType(type)}
               >
-                {fruitInfo?.emoji} {items.length}
+                <img src={fruitInfo?.image} alt={fruitInfo?.name} className="filter-fruit-img" />
+                {items.length}
               </button>
             )
           })}
@@ -294,7 +307,9 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
             const fruitInfo = FRUITS.find(f => f.level === fruit.fruit_type)
             return (
               <div key={idx} className="inventory-item" style={{ borderColor: getRarityColor(fruit.rarity) }}>
-                <div className="item-icon">{fruitInfo?.emoji || '❓'}</div>
+                <div className="item-icon">
+                  <img src={fruitInfo?.image} alt={fruitInfo?.name} className="inventory-fruit-img" />
+                </div>
                 <div className="item-details">
                   <div className="item-name">{fruitInfo?.name || 'Unknown'}</div>
                   <div className="item-rarity" style={{ color: getRarityColor(fruit.rarity) }}>
@@ -307,136 +322,6 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
           })}
         </div>
       )}
-      
-      <style>{`
-        .inventory-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 10px;
-          padding: 15px 20px;
-        }
-        .inventory-capacity {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-        .capacity-text {
-          font-size: 1rem;
-          padding: 5px 12px;
-          background: rgba(255,255,255,0.1);
-          border-radius: 20px;
-        }
-        .capacity-text.warning {
-          background: rgba(255, 165, 0, 0.3);
-          color: #ffa500;
-        }
-        .capacity-text.full {
-          background: rgba(255, 0, 0, 0.3);
-          color: #ff4444;
-        }
-        .upgrade-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          color: white;
-          cursor: pointer;
-          font-weight: bold;
-          transition: transform 0.2s, opacity 0.2s;
-        }
-        .upgrade-btn:hover:not(:disabled) {
-          transform: scale(1.05);
-        }
-        .upgrade-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .capacity-warning {
-          padding: 12px 20px;
-          margin: 0 20px 15px;
-          border-radius: 8px;
-          text-align: center;
-          font-weight: bold;
-        }
-        .capacity-warning.warning {
-          background: rgba(255, 165, 0, 0.2);
-          border: 1px solid rgba(255, 165, 0, 0.5);
-          color: #ffa500;
-        }
-        .capacity-warning.full {
-          background: rgba(255, 0, 0, 0.2);
-          border: 1px solid rgba(255, 0, 0, 0.5);
-          color: #ff4444;
-        }
-        .type-filter {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 0 20px 15px;
-        }
-        .filter-btn {
-          background: rgba(255,255,255,0.1);
-          border: 1px solid rgba(255,255,255,0.2);
-          padding: 6px 12px;
-          border-radius: 20px;
-          color: white;
-          cursor: pointer;
-          font-size: 0.9rem;
-          transition: all 0.2s;
-        }
-        .filter-btn:hover {
-          background: rgba(255,255,255,0.2);
-        }
-        .filter-btn.active {
-          background: rgba(102, 126, 234, 0.5);
-          border-color: #667eea;
-        }
-        .tx-status {
-          padding: 10px 20px;
-          margin: 0 20px 15px;
-          background: rgba(0,0,0,0.3);
-          border-radius: 8px;
-          text-align: center;
-        }
-        .inventory-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-          gap: 15px;
-          padding: 20px;
-        }
-        .inventory-item {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
-          padding: 15px;
-          text-align: center;
-          border: 2px solid rgba(255,255,255,0.1);
-          transition: transform 0.2s;
-        }
-        .inventory-item:hover {
-          transform: translateY(-5px);
-          background: rgba(255, 255, 255, 0.1);
-        }
-        .item-icon {
-          font-size: 2.5rem;
-          margin-bottom: 10px;
-        }
-        .item-name {
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .item-rarity {
-          font-size: 0.8rem;
-          text-transform: uppercase;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .item-weight {
-          font-size: 0.9rem;
-          color: #aaa;
-        }
-      `}</style>
     </div>
   )
 }

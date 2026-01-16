@@ -25,33 +25,34 @@
 }
 
 /* ===================================================
-   2. SIDEBAR MENU (THANH ĐIỀU HƯỚNG BÊN TRÁI)
+   2. SIDEBAR MENU (THANH ĐIỀU HƯỚNG HOẠT HÌNH)
    =================================================== */
 .sidebar-menu {
   width: 250px;
-  background: rgba(26, 26, 46, 0.9);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #2c3e50; /* Màu nền xanh đậm phẳng */
+  border-right: 4px solid rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(15px);
   position: sticky;
   top: 0;
   height: 100vh;
   z-index: 100;
+  box-shadow: 5px 0 15px rgba(0,0,0,0.3);
 }
 
 .sidebar-header {
   padding: 2rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 4px solid rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 .sidebar-header h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #f1c40f;
+  text-shadow: 2px 2px 0 #d35400; /* Hiệu ứng chữ nổi 3D */
+  transform: rotate(-3deg); /* Nghiêng nhẹ tinh nghịch */
 }
 
 .sidebar-nav {
@@ -59,33 +60,48 @@
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
+/* Nút Sidebar - Phong cách Cartoon */
 .sidebar-nav button {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  border: none;
+  border: 3px solid transparent; /* Viền ẩn mặc định */
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 12px;
+  color: #ecf0f1;
+  font-size: 1rem;
+  font-weight: 800;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+
+.sidebar-nav button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
 }
 
 .sidebar-nav button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3498db;
   color: #fff;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  border: 3px solid #fff;
+  box-shadow: 0 5px 0 #2980b9;
+  transform: translateY(0);
+}
+
+.sidebar-nav button.active:active {
+  transform: translateY(5px);
+  box-shadow: 0 0 0 #2980b9;
 }
 
 .sidebar-footer {
   padding: 1.5rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .seeds-display {
@@ -93,34 +109,70 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: #27ae60;
+  border-radius: 16px;
+  border: 3px solid #fff;
+  box-shadow: 0 5px 0 #1e8449;
+}
+
+.seeds-display .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+.seeds-display .value {
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
 }
 
 /* ===================================================
-   3. TOP BAR & HEADER (THANH CÔNG CỤ PHÍA TRÊN)
+   3. TOP BAR & HEADER (THANH CÔNG CỤ)
    =================================================== */
 .top-bar, .app-header {
   padding: 1rem 2rem;
-  background: rgba(26, 26, 46, 0.5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent; /* Để nền app hiển thị xuyên qua */
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  backdrop-filter: blur(10px);
-  height: 70px;
+  height: 80px;
   position: sticky;
   top: 0;
   z-index: 90;
 }
 
+/* Style lại nút Connect Button (ghi đè style mặc định nếu có thể hoặc bọc ngoài) */
+/* Lưu ý: ConnectButton của dApp Kit thường có style riêng, ta có thể tác động vào wrapper của nó */
+.top-bar-right button {
+  background: #e74c3c !important;
+  border-radius: 20px !important;
+  font-weight: 900 !important;
+  border: 3px solid #fff !important;
+  box-shadow: 0 5px 0 #c0392b !important;
+  padding: 0.8rem 1.5rem !important;
+  color: white !important;
+}
+
+.top-bar-right button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.top-bar-right button:active {
+  transform: translateY(5px) !important;
+  box-shadow: none !important;
+}
+
 .total-harvested {
-  background: rgba(254, 202, 87, 0.1);
-  border: 1px solid rgba(254, 202, 87, 0.3);
+  background: #f1c40f;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 0 #d35400;
   padding: 0.5rem 1rem;
   border-radius: 12px;
-  color: #feca57;
-  font-weight: bold;
+  color: #5d4037;
+  font-weight: 900;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -142,7 +194,8 @@
     top: auto;
     flex-direction: row;
     border-right: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid rgba(0,0,0,0.2);
+    padding-bottom: 10px; /* Safe area cho iPhone */
   }
 
   .sidebar-header, .sidebar-footer {
@@ -153,13 +206,20 @@
     flex-direction: row;
     padding: 0.5rem;
     justify-content: space-around;
+    gap: 5px;
   }
 
   .sidebar-nav button {
     flex-direction: column;
     padding: 0.5rem;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     gap: 4px;
+    border-width: 2px;
+    border-radius: 10px;
+  }
+  
+  .sidebar-nav button.active {
+    box-shadow: 0 3px 0 #2980b9;
   }
 
   .content-area {

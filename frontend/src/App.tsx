@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-// 1. Import các Trang con
+// Import Trang con
 import FruitGame from './components/FruitGame'
 import PlayerLand from './components/PlayerLand'
 import Inventory from './components/Inventory'
 import Market from './components/Market'
 import Leaderboard from './components/Leaderboard'
 
-// 2. Import bộ 9 file CSS Modular (Đảm bảo ní đã tạo các file này trong thư mục styles)
+// Import bộ 9 file CSS Modular (Đảm bảo ní đã tạo các file này trong thư mục styles)
 import './styles/Base.css'
 import './styles/Layout.css'
 import './styles/Landing.css'
@@ -20,10 +20,12 @@ import './styles/Market.css'
 import './styles/Leaderboard.css'
 import './styles/Components.css'
 
-// 3. Import Assets (Nếu ní đã có file ảnh, nếu chưa có thể dùng emoji tạm)
-import appleImg from './assets/img/Apple.png'
-import watermelonImg from './assets/img/Watermelon.png'
-import lemonImg from './assets/img/Lemon.png'
+// Import Assets - Fruits
+import imgApple from './assets/fruit/Táo.png'
+import imgGrape from './assets/fruit/Nho.png'
+import imgLemon from './assets/fruit/Chanh.png'
+import imgWatermelon from './assets/fruit/Dưa hấu.png'
+import imgSeed from './assets/Hạt 1.svg' // Using Hạt 1.svg for the seed icon
 
 const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
@@ -115,12 +117,11 @@ function App() {
      =================================================== */
   return (
     <div className="app">
-      {/* 1. NỀN TRÁI CÂY BAY (Toàn cục) */}
       <div className="floating-fruits">
-        <span className="fruit-1">🍎</span>
-        <span className="fruit-2">🍇</span>
-        <span className="fruit-3">🍋</span>
-        <span className="fruit-4">🍉</span>
+        <img src={imgApple} alt="Apple" className="fruit-1" />
+        <img src={imgGrape} alt="Grape" className="fruit-2" />
+        <img src={imgLemon} alt="Lemon" className="fruit-3" />
+        <img src={imgWatermelon} alt="Watermelon" className="fruit-4" />
       </div>
 
       {!account ? (
@@ -175,7 +176,7 @@ function App() {
 
             <div className="sidebar-footer">
               <div className="seeds-display">
-                <span className="icon">🌱</span>
+                <img src={imgSeed} alt="Seed icon" className="icon seed-icon" />
                 <div>
                   <div className="label">Your Seeds</div>
                   <div className="value">{playerSeeds.toLocaleString()}</div>

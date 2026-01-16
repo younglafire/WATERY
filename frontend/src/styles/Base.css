@@ -66,9 +66,10 @@ body {
 /* ===================================================
    3. BACKGROUND DECORATIONS (TRÁI CÂY BAY)
    =================================================== */
-.floating-fruits span {
+.floating-fruits img {
   position: fixed; 
-  font-size: 3rem;
+  width: 60px; /* Thay thế cho font-size 3rem */
+  height: auto;
   opacity: 0.15;
   filter: blur(1px);
   z-index: 0; 

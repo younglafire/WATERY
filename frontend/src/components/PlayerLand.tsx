@@ -2,6 +2,23 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
+// Soil Assets
+import chauDat from '../assets/Chậu đất.svg'
+import chauDatNayMam from '../assets/Chậu đất nảy mầm.svg'
+import chauDatTuoiCay from '../assets/Chậu đất tưới cây.svg'
+
+// Fruit Assets
+import imgCherry from '../assets/fruit/Cherry.png'
+import imgGrape from '../assets/fruit/Nho.png'
+import imgOrange from '../assets/fruit/Cam.png'
+import imgLemon from '../assets/fruit/Chanh.png'
+import imgApple from '../assets/fruit/Táo.png'
+import imgPear from '../assets/fruit/Lê.png'
+import imgPeach from '../assets/fruit/Đào.png'
+import imgPineapple from '../assets/fruit/Thơm.png'
+import imgMelon from '../assets/fruit/Dưa lưới.png'
+import imgWatermelon from '../assets/fruit/Dưa hấu.png'
+
 const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
@@ -19,16 +36,16 @@ const NEW_LAND_COST = 500n
 const LAND_UPGRADE_BASE_COST = 100n
 
 const FRUITS = [
-  { level: 1, emoji: '🍒', name: 'Cherry' },
-  { level: 2, emoji: '🍇', name: 'Grape' },
-  { level: 3, emoji: '🍊', name: 'Orange' },
-  { level: 4, emoji: '🍋', name: 'Lemon' },
-  { level: 5, emoji: '🍎', name: 'Apple' },
-  { level: 6, emoji: '🍐', name: 'Pear' },
-  { level: 7, emoji: '🍑', name: 'Peach' },
-  { level: 8, emoji: '🍍', name: 'Pineapple' },
-  { level: 9, emoji: '🍈', name: 'Melon' },
-  { level: 10, emoji: '🍉', name: 'Watermelon' },
+  { level: 1, image: imgCherry, name: 'Cherry' },
+  { level: 2, image: imgGrape, name: 'Grape' },
+  { level: 3, image: imgOrange, name: 'Orange' },
+  { level: 4, image: imgLemon, name: 'Lemon' },
+  { level: 5, image: imgApple, name: 'Apple' },
+  { level: 6, image: imgPear, name: 'Pear' },
+  { level: 7, image: imgPeach, name: 'Peach' },
+  { level: 8, image: imgPineapple, name: 'Pineapple' },
+  { level: 9, image: imgMelon, name: 'Melon' },
+  { level: 10, image: imgWatermelon, name: 'Watermelon' },
 ]
 
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
@@ -917,6 +934,7 @@ export default function PlayerLand({
             {slots.map((slot) => {
               const isReady = slot.fruit && currentTime >= slot.fruit.plantedAt + GROW_TIME_MS
               const timeLeft = slot.fruit ? Math.max(0, Math.ceil((slot.fruit.plantedAt + GROW_TIME_MS - currentTime) / 1000)) : 0
+              const fruitData = slot.fruit ? FRUITS[slot.fruit.fruitType - 1] : null
               
               return (
                 <div
@@ -926,23 +944,43 @@ export default function PlayerLand({
                 >
                   {!slot.fruit ? (
                     <div className="slot-empty">
-                      <span className="slot-icon">➕</span>
-                      <span className="slot-label">Plant</span>
+                      <img src={chauDat} alt="Soil" className="soil-img" />
+                      <div className="slot-overlay">
+                        <span className="slot-icon">➕</span>
+                        <span className="slot-label">Plant</span>
+                      </div>
                     </div>
                   ) : isReady ? (
                     <div className="slot-ready">
-                      <div className="slot-fruit-emoji">{FRUITS[slot.fruit.fruitType - 1]?.emoji}</div>
-                      <span className="slot-name">{FRUITS[slot.fruit.fruitType - 1]?.name}</span>
-                      <span className="slot-rarity" style={{ color: RARITY_COLORS[slot.fruit.rarity - 1] }}>
-                        {RARITIES[slot.fruit.rarity - 1]}
-                      </span>
+                      <img src={chauDatTuoiCay} alt="Pot" className="soil-img" />
+                      <div className="fruit-display">
+                        <img src={fruitData?.image} alt={fruitData?.name} className="fruit-img-ready" />
+                        <span className="slot-name">{fruitData?.name}</span>
+                        <div className="slot-stats">
+                          <span className="slot-rarity" style={{ color: RARITY_COLORS[slot.fruit.rarity - 1] }}>
+                            {RARITIES[slot.fruit.rarity - 1]}
+                          </span>
+                          <span className="slot-weight"> • {slot.fruit.weight}g</span>
+                        </div>
+                      </div>
                       <span className="slot-harvest">🌾 Tap to Harvest</span>
                     </div>
                   ) : (
                     <div className="slot-growing">
-                      <span className="slot-emoji growing-anim">🌱</span>
-                      <span className="slot-timer">⏱️ {timeLeft}s</span>
-                      <span className="slot-seeds">{slot.fruit.seedsUsed} seeds</span>
+                      <img src={chauDatNayMam} alt="Growing" className="soil-img" />
+                      <div className="slot-overlay">
+                        <div className="growth-timer">
+                          <span className="timer-icon">⏱️</span>
+                          <span className="timer-text">{timeLeft}s</span>
+                        </div>
+                        <div className="growth-progress">
+                          <div 
+                            className="growth-bar" 
+                            style={{ width: `${Math.min(100, ((GROW_TIME_MS - (timeLeft * 1000)) / GROW_TIME_MS) * 100)}%` }}
+                          ></div>
+                        </div>
+                        <span className="slot-seeds">{slot.fruit.seedsUsed} seeds</span>
+                      </div>
                     </div>
                   )}
                 </div>
