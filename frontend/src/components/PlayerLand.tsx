@@ -1,24 +1,37 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0xe6d304e671b8fd270f8b5d978dfed1a9debd20ec20ea784e36fb872fa3a2b638'
+const PACKAGE_ID = '0xcd19d7a5d67772d9b6d558ed1ffe0adada1092877a362dd960094a55cc66aaed'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
-const MAX_SLOTS = 6
 const GROW_TIME_MS = 15000 // 15 seconds
 
+// SeedAdminCap shared object ID (from contract publish)
+const SEED_ADMIN_CAP = '0x75d9f7428f97b64763dd70df99ae7348412d75e4032229866d7d93f01c39eb79'
+
+// SEED coin type and decimals
+const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
+const SEED_DECIMALS = 1_000_000_000n
+
+// Costs in whole SEED tokens
+const NEW_LAND_COST = 500n
+const LAND_UPGRADE_BASE_COST = 100n
+
+// Pinata IPFS gateway base URL
+const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs'
+
 const FRUITS = [
-  { level: 1, emoji: '🍒', name: 'Cherry' },
-  { level: 2, emoji: '🍇', name: 'Grape' },
-  { level: 3, emoji: '🍊', name: 'Orange' },
-  { level: 4, emoji: '🍋', name: 'Lemon' },
-  { level: 5, emoji: '🍎', name: 'Apple' },
-  { level: 6, emoji: '🍐', name: 'Pear' },
-  { level: 7, emoji: '🍑', name: 'Peach' },
-  { level: 8, emoji: '🍍', name: 'Pineapple' },
-  { level: 9, emoji: '🍈', name: 'Melon' },
-  { level: 10, emoji: '🍉', name: 'Watermelon' },
+  { level: 1, image: `${IPFS_GATEWAY}/bafkreicydu6guwunucel3v5miduloc62s5pjsyirh5pxw5zjrnzcgdsap4`, name: 'Cherry' },
+  { level: 2, image: `${IPFS_GATEWAY}/bafkreifvpkhlj53igt66rcyzylffbfbcdl7nqfqypxdjrxvhpwl3rmpgu4`, name: 'Grape' },
+  { level: 3, image: `${IPFS_GATEWAY}/bafkreibenssqrrj3ctd6bfuycn66ozwrtzt23b3atwegjnt5wkqcnfrndi`, name: 'Orange' },
+  { level: 4, image: `${IPFS_GATEWAY}/bafkreiarh47cw5m442fh76qkaws23uk7ztte5wyswqi2qnbgje5pkrcfme`, name: 'Lemon' },
+  { level: 5, image: `${IPFS_GATEWAY}/bafkreibz6wuhdung3neha7jyyf7323qgjrtsvi3y5bixqtk32hawzvf35i`, name: 'Apple' },
+  { level: 6, image: `${IPFS_GATEWAY}/bafkreifkvji2k4oyyxo3fyggkn5dvbuouvip765jk5kfa6ewt37tqkwda4`, name: 'Pear' },
+  { level: 7, image: `${IPFS_GATEWAY}/bafkreihz77f36frdk7nq332g7zblwt2ctca4cvrr53awr6rybtlp56ohvy`, name: 'Peach' },
+  { level: 8, image: `${IPFS_GATEWAY}/bafkreigkdamx6cylhgcthhrhx5p4rb4otkybrhyvsprvk2huyrnxrm2uya`, name: 'Pineapple' },
+  { level: 9, image: `${IPFS_GATEWAY}/bafkreifefcjgleils74ujmmjlqakteiwaiotxc4sioeyrkkeul6wmqfka4`, name: 'Melon' },
+  { level: 10, image: `${IPFS_GATEWAY}/bafybeib4oogwh4auyotbqfcp4bxj4qcjw4xq5htpuafbyjeifuu3dcfkha`, name: 'Watermelon' },
 ]
 
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
@@ -37,32 +50,36 @@ interface Slot {
   fruit: PlantedFruit | null
 }
 
-interface SeedBag {
-  id: string
-  seeds: number
-}
-
-interface HarvestedFruit {
+interface InventoryFruit {
   fruitType: number
   rarity: number
   weight: number
+  harvestedAt: number
 }
 
 interface PlayerLandProps {
+  playerAccountId: string | null
+  playerInventoryId: string | null
   landId: string | null
-  onLandCreated?: (landId: string) => void
+  playerSeeds: number
+  onDataChanged?: () => void
 }
 
-export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
+export default function PlayerLand({ 
+  playerAccountId, 
+  playerInventoryId, 
+  landId, 
+  playerSeeds,
+  onDataChanged 
+}: PlayerLandProps) {
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
   
   const [slots, setSlots] = useState<Slot[]>([])
-  const [seedBags, setSeedBags] = useState<SeedBag[]>([])
-  const [selectedBag, setSelectedBag] = useState<string | null>(null)
-  const [inventoryId, setInventoryId] = useState<string | null>(null)
-  const [inventory, setInventory] = useState<HarvestedFruit[]>([])
+  const [landLevel, setLandLevel] = useState(1)
+  const [maxSlots, setMaxSlots] = useState(4)
+  const [inventory, setInventory] = useState<InventoryFruit[]>([])
   const [txStatus, setTxStatus] = useState('')
   const [currentTime, setCurrentTime] = useState(Date.now())
   
@@ -73,84 +90,55 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
   const [showBatchModal, setShowBatchModal] = useState(false)
   const [batchSeeds, setBatchSeeds] = useState(1)
 
+  // Suppress unused variable warning
+  void account
+
   // Update timer every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // Fetch all user objects
-  const fetchUserData = async () => {
-    if (!account?.address) return
-    
-    try {
-      const objects = await suiClient.getOwnedObjects({
-        owner: account.address,
-        options: { showType: true, showContent: true },
-      })
-
-      const bags: SeedBag[] = []
-      
-      for (const obj of objects.data) {
-        // Only use objects from CURRENT package
-        if (!obj.data?.type?.includes(PACKAGE_ID)) continue
-        
-        if (obj.data.type.includes('SeedBag')) {
-          const content = obj.data.content
-          if (content && 'fields' in content) {
-            bags.push({
-              id: obj.data.objectId,
-              seeds: Number((content.fields as { seeds: string }).seeds || 0)
-            })
-          }
-        }
-        if (obj.data.type.includes('FruitInventory')) {
-          setInventoryId(obj.data.objectId)
-          const content = obj.data.content
-          if (content && 'fields' in content) {
-            const fields = content.fields as { fruits: Array<{ fields: { fruit_type: string; rarity: string; weight: string } }> }
-            setInventory((fields.fruits || []).map(f => ({
-              fruitType: Number(f.fields?.fruit_type || 1),
-              rarity: Number(f.fields?.rarity || 1),
-              weight: Number(f.fields?.weight || 100),
-            })))
-          }
-        }
-      }
-      setSeedBags(bags)
-      if (bags.length > 0 && !selectedBag) {
-        setSelectedBag(bags[0].id)
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-    }
-  }
-
-  // Fetch land slots
-  const fetchLandData = async () => {
+  // Fetch land data
+  const fetchLandData = useCallback(async () => {
     if (!landId) return
     
     try {
-      const landObject = await suiClient.getObject({
+      const landObj = await suiClient.getObject({
         id: landId,
         options: { showContent: true }
       })
       
-      if (landObject.data?.content?.dataType === 'moveObject') {
-        const fields = landObject.data.content.fields as { slots: Array<{ fields?: { fruit_type: string; rarity: string; weight: string; seeds_used: string; planted_at: string } } | null> }
+      if (landObj.data?.content && 'fields' in landObj.data.content) {
+        const fields = landObj.data.content.fields as Record<string, unknown>
+        
+        setLandLevel(Number(fields.level || 1))
+        setMaxSlots(Number(fields.max_slots || 4))
+        
+        // Parse slots
+        const slotsData = fields.slots as Array<{
+          fields?: {
+            fruit_type?: number
+            rarity?: number
+            weight?: number
+            seeds_used?: number
+            planted_at?: string
+          } | null
+        } | null> || []
         
         const parsedSlots: Slot[] = []
-        for (let i = 0; i < MAX_SLOTS; i++) {
-          const slotData = fields.slots?.[i]
-          if (slotData && slotData.fields) {
+        for (let i = 0; i < slotsData.length; i++) {
+          const slotOption = slotsData[i]
+          if (slotOption && 'fields' in slotOption && slotOption.fields) {
+            const slotData = slotOption.fields
             parsedSlots.push({
               index: i,
               fruit: {
-                fruitType: Number(slotData.fields.fruit_type || 1),
-                rarity: Number(slotData.fields.rarity || 1),
-                weight: Number(slotData.fields.weight || 100),
-                seedsUsed: Number(slotData.fields.seeds_used || 1),
-                plantedAt: Number(slotData.fields.planted_at || 0),
+                fruitType: Number(slotData.fruit_type || 1),
+                rarity: Number(slotData.rarity || 1),
+                weight: Number(slotData.weight || 100),
+                seedsUsed: Math.floor(Number(slotData.seeds_used || 1) / Number(SEED_DECIMALS)),
+                plantedAt: Number(slotData.planted_at || 0),
               }
             })
           } else {
@@ -162,41 +150,68 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
     } catch (error) {
       console.error('Error fetching land data:', error)
     }
-  }
+  }, [landId, suiClient])
+
+  // Fetch inventory data
+  const fetchInventoryData = useCallback(async () => {
+    if (!playerInventoryId) return
+    
+    try {
+      const invObj = await suiClient.getObject({
+        id: playerInventoryId,
+        options: { showContent: true }
+      })
+      
+      if (invObj.data?.content && 'fields' in invObj.data.content) {
+        const fields = invObj.data.content.fields as Record<string, unknown>
+        const fruits = fields.fruits as Array<{
+          fields?: {
+            fruit_type?: number
+            rarity?: number
+            weight?: number
+            harvested_at?: string
+          }
+        }> || []
+        
+        const parsedFruits: InventoryFruit[] = fruits.map(f => ({
+          fruitType: Number(f.fields?.fruit_type || 1),
+          rarity: Number(f.fields?.rarity || 1),
+          weight: Number(f.fields?.weight || 100),
+          harvestedAt: Number(f.fields?.harvested_at || 0),
+        }))
+        setInventory(parsedFruits)
+      }
+    } catch (error) {
+      console.error('Error fetching inventory:', error)
+    }
+  }, [playerInventoryId, suiClient])
 
   useEffect(() => {
-    fetchUserData()
     fetchLandData()
-  }, [landId, account?.address])
+    fetchInventoryData()
+  }, [fetchLandData, fetchInventoryData])
 
-  // Create first land FREE
-  const createLandOnChain = async () => {
-    setTxStatus('Creating land...')
+  // Create first land (for new players)
+  const createFirstLand = async () => {
+    if (!playerAccountId) return
+    
+    setTxStatus('🏡 Creating your first land...')
     const tx = new Transaction()
     tx.moveCall({
-      target: `${PACKAGE_ID}::land::create_land`,
+      target: `${PACKAGE_ID}::land::create_first_land`,
+      arguments: [
+        tx.object(playerAccountId),
+        tx.object(CLOCK_OBJECT),
+      ],
     })
 
     signAndExecute(
       { transaction: tx },
       {
         onSuccess: async (result) => {
-          const txDetails = await suiClient.waitForTransaction({
-            digest: result.digest,
-            options: { showObjectChanges: true }
-          })
-          
-          const created = txDetails.objectChanges?.find(
-            (change) => change.type === 'created' && 
-            'objectType' in change && 
-            change.objectType.includes('PlayerLand')
-          )
-          
-          if (created && 'objectId' in created) {
-            onLandCreated?.(created.objectId)
-            setTxStatus('🎉 Land created!')
-            fetchUserData()
-          }
+          await suiClient.waitForTransaction({ digest: result.digest })
+          setTxStatus('🎉 Land created!')
+          onDataChanged?.()
           setTimeout(() => setTxStatus(''), 2000)
         },
         onError: (error) => {
@@ -207,12 +222,52 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
     )
   }
 
-  // Create inventory
-  const createInventoryOnChain = async () => {
-    setTxStatus('Creating inventory...')
+  // Buy additional land
+  const buyNewLand = async () => {
+    if (!playerAccountId || !account?.address) return
+    
+    const costInSeeds = Number(NEW_LAND_COST)
+    if (playerSeeds < costInSeeds) {
+      setTxStatus(`❌ Not enough seeds! Need ${costInSeeds} SEED`)
+      return
+    }
+    
+    setTxStatus('🏡 Buying new land...')
+    
+    // Get all SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
     const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
+    // Split exact amount needed from merged coin
+    const cost = NEW_LAND_COST * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(cost)]
+    )
+    
     tx.moveCall({
-      target: `${PACKAGE_ID}::land::create_inventory`,
+      target: `${PACKAGE_ID}::land::buy_new_land`,
+      arguments: [
+        tx.object(playerAccountId),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
+        tx.object(CLOCK_OBJECT),
+      ],
     })
 
     signAndExecute(
@@ -220,12 +275,79 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
       {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
-          setTxStatus('🎒 Inventory created!')
-          fetchUserData()
+          setTxStatus('🎉 New land purchased!')
+          onDataChanged?.()
           setTimeout(() => setTxStatus(''), 2000)
         },
         onError: (error) => {
-          console.error('Error creating inventory:', error)
+          console.error('Error buying land:', error)
+          setTxStatus('Error: ' + error.message)
+        },
+      }
+    )
+  }
+
+  // Upgrade land to get more slots
+  const upgradeLand = async () => {
+    if (!playerAccountId || !landId || !account?.address) return
+    
+    // Cost doubles with each level: 100, 200, 400, 800...
+    const costInSeeds = Number(LAND_UPGRADE_BASE_COST) * (1 << landLevel)
+    if (playerSeeds < costInSeeds) {
+      setTxStatus(`❌ Not enough seeds! Need ${costInSeeds} SEED`)
+      return
+    }
+    
+    setTxStatus('⬆️ Upgrading land...')
+    
+    // Get all SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
+    const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
+    // Split the required amount
+    const cost = LAND_UPGRADE_BASE_COST * BigInt(1 << landLevel) * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(cost)]
+    )
+    
+    tx.moveCall({
+      target: `${PACKAGE_ID}::land::upgrade_land`,
+      arguments: [
+        tx.object(playerAccountId),
+        tx.object(landId),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
+      ],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async (result) => {
+          await suiClient.waitForTransaction({ digest: result.digest })
+          setTxStatus('🎉 Land upgraded!')
+          fetchLandData()
+          onDataChanged?.()
+          setTimeout(() => setTxStatus(''), 2000)
+        },
+        onError: (error) => {
+          console.error('Error upgrading land:', error)
           setTxStatus('Error: ' + error.message)
         },
       }
@@ -234,19 +356,71 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
 
   // Plant in single slot
   const plantInSlot = async () => {
-    if (!landId || !selectedBag || plantSlotIndex === null) return
+    console.log('plantInSlot called', { playerAccountId, landId, playerInventoryId, plantSlotIndex, seedsToPlant })
+    
+    if (!playerAccountId) {
+      setTxStatus('❌ Player account not found')
+      return
+    }
+    if (!landId) {
+      setTxStatus('❌ Land not found')
+      return
+    }
+    if (!playerInventoryId) {
+      setTxStatus('❌ Inventory not found')
+      return
+    }
+    if (plantSlotIndex === null) {
+      setTxStatus('❌ No slot selected')
+      return
+    }
+    if (!account?.address) {
+      setTxStatus('❌ Wallet not connected')
+      return
+    }
+    if (playerSeeds < seedsToPlant) {
+      setTxStatus(`❌ Not enough seeds! You have ${playerSeeds}, need ${seedsToPlant}`)
+      return
+    }
     
     setTxStatus(`🌱 Planting ${seedsToPlant} seeds in slot ${plantSlotIndex + 1}...`)
     setShowPlantModal(false)
     
+    // Get all SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
     const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
+    // Split the required amount (with decimals)
+    const amountWithDecimals = BigInt(seedsToPlant) * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(amountWithDecimals)]
+    )
+    
     tx.moveCall({
       target: `${PACKAGE_ID}::land::plant_in_slot`,
       arguments: [
+        tx.object(playerAccountId),
         tx.object(landId),
-        tx.object(selectedBag),
+        tx.object(playerInventoryId),
         tx.pure.u64(plantSlotIndex),
-        tx.pure.u64(seedsToPlant),
+        payment,
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -258,21 +432,40 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
           setTxStatus('🌳 Seed planted!')
-          fetchUserData()
           fetchLandData()
+          fetchInventoryData()
+          onDataChanged?.()
           setTimeout(() => setTxStatus(''), 3000)
         },
         onError: (error) => {
           console.error('Error planting:', error)
           setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
         },
       }
     )
   }
 
-  // Batch plant all empty slots
-  const plantBatch = async () => {
-    if (!landId || !selectedBag) return
+  // Plant all empty slots
+  const plantAll = async () => {
+    console.log('plantAll called', { playerAccountId, landId, playerInventoryId, batchSeeds })
+    
+    if (!playerAccountId) {
+      setTxStatus('❌ Player account not found')
+      return
+    }
+    if (!landId) {
+      setTxStatus('❌ Land not found')
+      return
+    }
+    if (!playerInventoryId) {
+      setTxStatus('❌ Inventory not found')
+      return
+    }
+    if (!account?.address) {
+      setTxStatus('❌ Wallet not connected')
+      return
+    }
     
     const emptyCount = slots.filter(s => !s.fruit).length
     if (emptyCount === 0) {
@@ -280,16 +473,50 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
       return
     }
     
+    const totalNeeded = batchSeeds * emptyCount
+    if (playerSeeds < totalNeeded) {
+      setTxStatus(`❌ Not enough seeds! You have ${playerSeeds}, need ${totalNeeded}`)
+      return
+    }
+    
     setTxStatus(`🌱 Planting ${batchSeeds} seeds in ${emptyCount} slots...`)
     setShowBatchModal(false)
     
+    // Get all SEED coins
+    const seedCoins = await suiClient.getCoins({
+      owner: account.address,
+      coinType: SEED_COIN_TYPE,
+    })
+    
+    if (seedCoins.data.length === 0) {
+      setTxStatus('❌ No SEED coins found')
+      return
+    }
+    
     const tx = new Transaction()
+    
+    // Merge all coins into first one if multiple coins exist
+    if (seedCoins.data.length > 1) {
+      const coinIds = seedCoins.data.map(coin => tx.object(coin.coinObjectId))
+      tx.mergeCoins(coinIds[0], coinIds.slice(1))
+    }
+    
+    // Total amount needed (with decimals)
+    const totalAmountWithDecimals = BigInt(totalNeeded) * SEED_DECIMALS
+    const [payment] = tx.splitCoins(
+      tx.object(seedCoins.data[0].coinObjectId),
+      [tx.pure.u64(totalAmountWithDecimals)]
+    )
+    
     tx.moveCall({
-      target: `${PACKAGE_ID}::land::plant_batch`,
+      target: `${PACKAGE_ID}::land::plant_all`,
       arguments: [
+        tx.object(playerAccountId),
         tx.object(landId),
-        tx.object(selectedBag),
-        tx.pure.u64(batchSeeds),
+        tx.object(playerInventoryId),
+        payment,
+        tx.pure.u64(batchSeeds), // Don't multiply by decimals - payment already has it
+        tx.object(SEED_ADMIN_CAP),
         tx.object(CLOCK_OBJECT),
         tx.object(RANDOM_OBJECT),
       ],
@@ -301,31 +528,31 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
           setTxStatus(`🌳 Planted in ${emptyCount} slots!`)
-          fetchUserData()
           fetchLandData()
+          fetchInventoryData()
+          onDataChanged?.()
           setTimeout(() => setTxStatus(''), 3000)
         },
         onError: (error) => {
           console.error('Error batch planting:', error)
           setTxStatus('Error: ' + error.message)
+          setTimeout(() => setTxStatus(''), 5000)
         },
       }
     )
   }
 
-  // Harvest single slot
-  const harvestSlot = async (slotIndex: number) => {
-    if (!landId || !inventoryId) return
+  // Force harvest (triggers auto-harvest)
+  const forceHarvest = async () => {
+    if (!landId || !playerInventoryId) return
     
-    setTxStatus(`🌾 Harvesting slot ${slotIndex + 1}...`)
-    
+    setTxStatus('🌾 Harvesting ready fruits...')
     const tx = new Transaction()
     tx.moveCall({
-      target: `${PACKAGE_ID}::land::harvest_slot`,
+      target: `${PACKAGE_ID}::land::harvest_ready`,
       arguments: [
         tx.object(landId),
-        tx.object(inventoryId),
-        tx.pure.u64(slotIndex),
+        tx.object(playerInventoryId),
         tx.object(CLOCK_OBJECT),
       ],
     })
@@ -335,9 +562,10 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
       {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
-          setTxStatus('🍎 Fruit harvested!')
-          fetchUserData()
+          setTxStatus('🍎 Fruits harvested to inventory!')
           fetchLandData()
+          fetchInventoryData()
+          onDataChanged?.()
           setTimeout(() => setTxStatus(''), 3000)
         },
         onError: (error) => {
@@ -348,19 +576,19 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
     )
   }
 
-  // Harvest all ready
-  const harvestAll = async () => {
-    if (!landId || !inventoryId) return
-    
-    setTxStatus('🌾 Harvesting all ready fruits...')
-    
+  // Mint test seeds (for testing/hackathon)
+  const mintTestSeeds = async () => {
+    setTxStatus('🌱 Minting 100 test seeds...')
     const tx = new Transaction()
+    
+    // Multiply by 10^9 for 9 decimals
+    const amountWithDecimals = 100n * SEED_DECIMALS
+    
     tx.moveCall({
-      target: `${PACKAGE_ID}::land::harvest_all`,
+      target: `${PACKAGE_ID}::player::mint_seeds`,
       arguments: [
-        tx.object(landId),
-        tx.object(inventoryId),
-        tx.object(CLOCK_OBJECT),
+        tx.object(SEED_ADMIN_CAP),
+        tx.pure.u64(amountWithDecimals),
       ],
     })
 
@@ -369,37 +597,45 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
       {
         onSuccess: async (result) => {
           await suiClient.waitForTransaction({ digest: result.digest })
-          setTxStatus('🍎 All ready fruits harvested!')
-          fetchUserData()
-          fetchLandData()
-          setTimeout(() => setTxStatus(''), 3000)
+          setTxStatus('🎉 Got 100 seeds!')
+          onDataChanged?.()
+          setTimeout(() => setTxStatus(''), 2000)
         },
         onError: (error) => {
-          console.error('Error harvesting:', error)
+          console.error('Error minting seeds:', error)
           setTxStatus('Error: ' + error.message)
         },
       }
     )
   }
 
-  const totalSeeds = seedBags.reduce((acc, bag) => acc + bag.seeds, 0)
   const emptySlots = slots.filter(s => !s.fruit).length
   const readySlots = slots.filter(s => s.fruit && currentTime >= s.fruit.plantedAt + GROW_TIME_MS).length
 
   // Click on empty slot
   const handleSlotClick = (slot: Slot) => {
+    console.log('handleSlotClick', { slot, playerSeeds, playerAccountId, landId, playerInventoryId })
+    
     if (!slot.fruit) {
       // Empty slot - open plant modal
-      if (totalSeeds > 0 && selectedBag) {
+      if (playerSeeds > 0) {
+        console.log('Opening plant modal for slot', slot.index)
         setPlantSlotIndex(slot.index)
         setSeedsToPlant(1)
         setShowPlantModal(true)
+      } else {
+        setTxStatus('❌ You need seeds! Play the game or mint test seeds.')
+        setTimeout(() => setTxStatus(''), 3000)
       }
     } else {
-      // Has fruit - check if ready
+      // Has fruit - check if ready, trigger harvest
       const isReady = currentTime >= slot.fruit.plantedAt + GROW_TIME_MS
-      if (isReady && inventoryId) {
-        harvestSlot(slot.index)
+      if (isReady && playerInventoryId) {
+        forceHarvest()
+      } else {
+        const timeLeft = Math.max(0, Math.ceil((slot.fruit.plantedAt + GROW_TIME_MS - currentTime) / 1000))
+        setTxStatus(`⏱️ Still growing... ${timeLeft}s left`)
+        setTimeout(() => setTxStatus(''), 2000)
       }
     }
   }
@@ -416,63 +652,91 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
         </div>
       )}
 
-      {/* Seed Bags Overview */}
-      <div className="seed-bags-section">
-        <h4>🌱 Your Seeds: {totalSeeds}</h4>
-        {seedBags.length > 0 && (
-          <div className="seed-bags-list">
-            {seedBags.map(bag => (
-              <div 
-                key={bag.id} 
-                className={`seed-bag ${selectedBag === bag.id ? 'selected' : ''}`}
-                onClick={() => setSelectedBag(bag.id)}
-              >
-                🎒 {bag.seeds}
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Seeds Overview */}
+      <div className="seeds-section">
+        <div className="seeds-display">
+          <h4>🌱 Your Seeds: {playerSeeds}</h4>
+          {playerAccountId && (
+            <button 
+              onClick={mintTestSeeds} 
+              disabled={isPending}
+              className="mint-test-btn"
+              title="Mint 100 test seeds"
+            >
+              {isPending ? '⏳' : '+ Mint Test Seeds'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* No Land */}
-      {!landId && (
+      {!landId && playerAccountId && (
         <div className="create-land-prompt">
           <h3>🏡 No Land Yet</h3>
           <p>Create your first land for FREE!</p>
-          <button onClick={createLandOnChain} disabled={isPending}>
-            {isPending ? 'Creating...' : '🌱 Create Land'}
+          <button onClick={createFirstLand} disabled={isPending}>
+            {isPending ? 'Creating...' : '🌱 Create First Land'}
           </button>
+        </div>
+      )}
+
+      {/* No PlayerAccount */}
+      {!playerAccountId && (
+        <div className="create-account-prompt">
+          <h3>🎮 Create Account First</h3>
+          <p>You need to create a player account before getting land.</p>
         </div>
       )}
 
       {/* Has Land */}
       {landId && (
         <>
-          {/* No Inventory */}
-          {!inventoryId && (
-            <div className="create-inventory-prompt">
-              <p>Create inventory to store harvested fruits</p>
-              <button onClick={createInventoryOnChain} disabled={isPending}>
-                {isPending ? 'Creating...' : '🎒 Create Inventory'}
-              </button>
-            </div>
-          )}
+          {/* Land Info */}
+          <div className="land-info">
+            <span>Level {landLevel}</span>
+            <span>{maxSlots} slots</span>
+          </div>
 
           {/* Action Buttons */}
           <div className="land-actions">
-            {emptySlots > 0 && totalSeeds > 0 && (
-              <button onClick={() => setShowBatchModal(true)} disabled={isPending}>
-                🌱 Plant All ({emptySlots} slots)
+            {emptySlots > 0 && (
+              <button 
+                onClick={() => {
+                  if (playerSeeds === 0) {
+                    setTxStatus('❌ You need seeds first! Play the game or mint test seeds.')
+                    setTimeout(() => setTxStatus(''), 3000)
+                    return
+                  }
+                  setShowBatchModal(true)
+                }} 
+                disabled={isPending}
+                className={playerSeeds > 0 ? '' : 'disabled-hint'}
+              >
+                🌱 Plant All ({emptySlots} slots) {playerSeeds === 0 && '- Need seeds!'}
               </button>
             )}
-            {readySlots > 0 && inventoryId && (
-              <button onClick={harvestAll} disabled={isPending}>
+            {readySlots > 0 && playerInventoryId && (
+              <button onClick={forceHarvest} disabled={isPending}>
                 🌾 Harvest All ({readySlots} ready)
               </button>
             )}
+            <button 
+              onClick={upgradeLand} 
+              disabled={isPending || !playerAccountId}
+              title="Costs seeds to upgrade"
+            >
+              ⬆️ Upgrade Land (costs seeds)
+            </button>
+            <button 
+              onClick={buyNewLand} 
+              disabled={isPending || !playerAccountId}
+              title="Costs seeds to buy new land"
+            >
+              🏡 Buy New Land (costs seeds)
+            </button>
           </div>
 
-          {/* 6 Slots Grid */}
+          {/* Slots Grid */}
           <div className="slots-grid">
             {slots.map((slot) => {
               const isReady = slot.fruit && currentTime >= slot.fruit.plantedAt + GROW_TIME_MS
@@ -491,7 +755,7 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
                     </div>
                   ) : isReady ? (
                     <div className="slot-ready">
-                      <span className="slot-emoji">{FRUITS[slot.fruit.fruitType - 1]?.emoji || '🍎'}</span>
+                      <img src={FRUITS[slot.fruit.fruitType - 1]?.image} alt={FRUITS[slot.fruit.fruitType - 1]?.name} className="slot-fruit-img" />
                       <span className="slot-name">{FRUITS[slot.fruit.fruitType - 1]?.name}</span>
                       <span className="slot-rarity" style={{ color: RARITY_COLORS[slot.fruit.rarity - 1] }}>
                         {RARITIES[slot.fruit.rarity - 1]}
@@ -511,13 +775,13 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
           </div>
 
           {/* Inventory Section */}
-          {inventoryId && inventory.length > 0 && (
+          {playerInventoryId && inventory.length > 0 && (
             <div className="inventory-section">
               <h4>🎒 Your Inventory ({inventory.length} fruits)</h4>
               <div className="inventory-grid">
                 {inventory.map((fruit, idx) => (
                   <div key={idx} className="inventory-fruit" style={{ borderColor: RARITY_COLORS[fruit.rarity - 1] }}>
-                    <span className="fruit-emoji">{FRUITS[fruit.fruitType - 1]?.emoji || '🍎'}</span>
+                    <img src={FRUITS[fruit.fruitType - 1]?.image} alt={FRUITS[fruit.fruitType - 1]?.name} className="inventory-fruit-img" />
                     <span className="fruit-rarity" style={{ color: RARITY_COLORS[fruit.rarity - 1] }}>
                       {RARITIES[fruit.rarity - 1]}
                     </span>
@@ -541,14 +805,14 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
               <input
                 type="number"
                 min="1"
-                max={seedBags.find(b => b.id === selectedBag)?.seeds || 1}
+                max={playerSeeds}
                 value={seedsToPlant}
                 onChange={(e) => setSeedsToPlant(Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
             <div className="modal-actions">
               <button onClick={() => setShowPlantModal(false)}>Cancel</button>
-              <button onClick={plantInSlot} disabled={isPending || totalSeeds < seedsToPlant}>
+              <button onClick={plantInSlot} disabled={isPending || playerSeeds < seedsToPlant}>
                 🌱 Plant
               </button>
             </div>
@@ -567,7 +831,7 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
               <input
                 type="number"
                 min="1"
-                max={Math.floor(totalSeeds / emptySlots)}
+                max={Math.floor(playerSeeds / emptySlots)}
                 value={batchSeeds}
                 onChange={(e) => setBatchSeeds(Math.max(1, parseInt(e.target.value) || 1))}
               />
@@ -575,7 +839,7 @@ export default function PlayerLand({ landId, onLandCreated }: PlayerLandProps) {
             <p className="modal-total">Total: {batchSeeds * emptySlots} seeds</p>
             <div className="modal-actions">
               <button onClick={() => setShowBatchModal(false)}>Cancel</button>
-              <button onClick={plantBatch} disabled={isPending || totalSeeds < batchSeeds * emptySlots}>
+              <button onClick={plantAll} disabled={isPending || playerSeeds < batchSeeds * emptySlots}>
                 🌱 Plant All
               </button>
             </div>
