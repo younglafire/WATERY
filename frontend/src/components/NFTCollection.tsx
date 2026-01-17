@@ -52,21 +52,16 @@ export default function NFTCollection() {
   const [transferAddress, setTransferAddress] = useState('')
   const [txStatus, setTxStatus] = useState('')
 
-  // Fetch NFTs
   const fetchNFTs = async () => {
     if (!account?.address) return
     setIsLoading(true)
-    
     try {
-      // Get all objects owned by user filtered by FruitNFT type
       const objects = await suiClient.getOwnedObjects({
         owner: account.address,
         filter: { StructType: NFT_TYPE },
         options: { showContent: true, showDisplay: true }
       })
-
       const loadedNfts: FruitNFT[] = []
-      
       for (const obj of objects.data) {
         if (obj.data?.content?.dataType === 'moveObject') {
           const fields = obj.data.content.fields as any
@@ -81,139 +76,71 @@ export default function NFTCollection() {
           })
         }
       }
-      
       setNfts(loadedNfts)
-    } catch (err) {
-      console.error('Error fetching NFTs:', err)
-    } finally {
-      setIsLoading(false)
-    }
+    } catch (err) { console.error('Error fetching NFTs:', err) } finally { setIsLoading(false) }
   }
 
-  useEffect(() => {
-    fetchNFTs()
-  }, [account?.address, suiClient])
+  useEffect(() => { fetchNFTs() }, [account?.address, suiClient])
 
   const getRarityName = (rarity: number) => {
     switch (rarity) {
-      case 1: return 'Common'
-      case 2: return 'Uncommon'
-      case 3: return 'Rare'
-      case 4: return 'Epic'
-      case 5: return 'Legendary'
-      default: return 'Common'
+      case 1: return 'Common'; case 2: return 'Uncommon'; case 3: return 'Rare'; case 4: return 'Epic'; case 5: return 'Legendary'; default: return 'Common'
     }
   }
 
-  // Get rarity color
   const getRarityColor = (rarity: number) => {
     switch (rarity) {
-      case 1: return '#a0a0a0'
-      case 2: return '#2ecc71'
-      case 3: return '#3498db'
-      case 4: return '#9b59b6'
-      case 5: return '#f1c40f'
-      default: return '#a0a0a0'
+      case 1: return '#a0a0a0'; case 2: return '#2ecc71'; case 3: return '#3498db'; case 4: return '#9b59b6'; case 5: return '#f1c40f'; default: return '#a0a0a0'
     }
   }
 
-  // Handle Transfer NFT
   const handleTransfer = async () => {
     if (!selectedNft || !transferAddress || !account) return
-    
     setTxStatus('⏳ Transferring NFT...')
-    
     try {
       const tx = new Transaction()
-      tx.moveCall({
-        target: `${PACKAGE_ID}::fruit_nft::transfer_nft`,
-        arguments: [
-          tx.object(selectedNft.id),
-          tx.pure.address(transferAddress)
-        ]
+      tx.moveCall({ target: `${PACKAGE_ID}::fruit_nft::transfer_nft`, arguments: [tx.object(selectedNft.id), tx.pure.address(transferAddress)] })
+      signAndExecute({ transaction: tx }, {
+        onSuccess: async (result) => {
+          await suiClient.waitForTransaction({ digest: result.digest })
+          setTxStatus('✅ Transfer Successful!'); setSelectedNft(null); setTransferAddress(''); fetchNFTs(); setTimeout(() => setTxStatus(''), 3000)
+        },
+        onError: (err) => { console.error(err); setTxStatus('❌ Transfer Failed'); setTimeout(() => setTxStatus(''), 3000) }
       })
-
-      signAndExecute(
-        { transaction: tx },
-        {
-          onSuccess: async (result) => {
-            await suiClient.waitForTransaction({ digest: result.digest })
-            setTxStatus('✅ Transfer Successful!')
-            setSelectedNft(null)
-            setTransferAddress('')
-            fetchNFTs() // Refresh list
-            setTimeout(() => setTxStatus(''), 3000)
-          },
-          onError: (err) => {
-            console.error(err)
-            setTxStatus('❌ Transfer Failed')
-            setTimeout(() => setTxStatus(''), 3000)
-          }
-        }
-      )
-    } catch (e) {
-      console.error(e)
-      setTxStatus('❌ Error creating transaction')
-    }
+    } catch (e) { console.error(e); setTxStatus('❌ Error creating transaction') }
   }
 
   return (
     <div className="nft-collection-container">
       <div className="header-section">
-        <h2>💎 My Fruit Collection</h2>
-        <p>Your unique fruit NFTs minted from the blockchain</p>
+        <h2>💎 My Collection</h2>
+        <p>Your unique blockchain artifacts</p>
       </div>
 
-      {txStatus && (
-        <div className={`tx-status ${txStatus.includes('Failed') ? 'error' : 'success'}`}>
-          {isPending && <span className="spinner">⏳</span>} {txStatus}
-        </div>
-      )}
+      {txStatus && <div className={`tx-status ${txStatus.includes('Failed') ? 'error' : 'success'}`}>{isPending && <span className="spinner">⏳</span>} {txStatus}</div>}
 
-      {isLoading ? (
-        <div className="loading">Loading your precious fruits...</div>
-      ) : nfts.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🖼️</div>
-          <h3>No NFTs yet</h3>
-          <p>Go to your Inventory and mint some fruits!</p>
-        </div>
+      {isLoading ? <div className="loading">Loading artifacts...</div> : nfts.length === 0 ? (
+        <div className="empty-state"><div className="empty-icon">🖼️</div><h3>No NFTs yet</h3><p>Mint fruits from your inventory!</p></div>
       ) : (
         <div className="nft-grid">
           {nfts.map((nft) => {
             const fruitInfo = FRUITS.find(f => f.level === nft.fruit_type)
             return (
-              <div 
-                key={nft.id} 
-                className={`nft-card rarity-${nft.rarity}`} 
+              <div key={nft.id} className={`nft-card rarity-${nft.rarity}`} onClick={() => setSelectedNft(nft)}
                 style={{ 
+                  '--card-color': getRarityColor(nft.rarity),
                   borderColor: getRarityColor(nft.rarity),
-                  background: `linear-gradient(135deg, ${getRarityColor(nft.rarity)}20 0%, ${getRarityColor(nft.rarity)}05 100%)`,
-                  boxShadow: `0 8px 20px rgba(0,0,0,0.4), inset 0 0 15px ${getRarityColor(nft.rarity)}30`
-                }}
-                onClick={() => setSelectedNft(nft)}
+                  background: `linear-gradient(135deg, ${getRarityColor(nft.rarity)}35 0%, ${getRarityColor(nft.rarity)}10 100%)`,
+                  boxShadow: `0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px ${getRarityColor(nft.rarity)}40`
+                } as any}
               >
-                <div className="nft-image-container">
-                  <img src={fruitInfo?.image} alt={nft.name} className="nft-img" />
-                  <div className="nft-badge" style={{ 
-                    background: getRarityColor(nft.rarity),
-                    color: '#fff',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    fontWeight: 'bold',
-                    fontSize: '0.75rem',
-                    boxShadow: `0 2px 0 rgba(0,0,0,0.2)`,
-                    textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-                  }}>
-                    {getRarityName(nft.rarity)}
+                <div className="nft-image-container"><img src={fruitInfo?.image} alt={nft.name} className="nft-img" /></div>
+                <div className="nft-content">
+                  <div className="nft-badges">
+                    <span className="nft-pill rarity" style={{ background: getRarityColor(nft.rarity) }}>{getRarityName(nft.rarity)}</span>
+                    <span className="nft-pill weight">{nft.weight >= 1000 ? `${(nft.weight/1000).toFixed(2)}kg` : `${nft.weight}g`}</span>
                   </div>
-                </div>
-                <div className="nft-details">
-                  <h3 style={{ color: nft.rarity > 1 ? getRarityColor(nft.rarity) : 'white' }}>{nft.name}</h3>
-                  <div className="nft-stat">
-                    <span>Weight:</span>
-                    <strong>{nft.weight >= 1000 ? `${(fruit.weight / 1000).toFixed(2)}kg` : `${nft.weight}g`}</strong>
-                  </div>
+                  <h3 className="nft-name-pill">{nft.name}</h3>
                   <div className="nft-id">#{nft.id.slice(0, 6)}...{nft.id.slice(-4)}</div>
                 </div>
               </div>
@@ -222,64 +149,29 @@ export default function NFTCollection() {
         </div>
       )}
 
-      {/* Detail Modal */}
       {selectedNft && (
         <div className="modal-overlay" onClick={() => setSelectedNft(null)}>
           <div className="modal-content nft-modal" onClick={e => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setSelectedNft(null)}>×</button>
-            
             <div className="modal-split">
-              <div className="nft-preview-large">
-                 <img 
-                   src={FRUITS.find(f => f.level === selectedNft.fruit_type)?.image} 
-                   alt={selectedNft.name} 
-                 />
+              <div className="nft-preview-large" style={{ background: `radial-gradient(circle, ${getRarityColor(selectedNft.rarity)}40 0%, rgba(0,0,0,0) 70%)` }}>
+                 <img src={FRUITS.find(f => f.level === selectedNft.fruit_type)?.image} alt={selectedNft.name} />
               </div>
-              
               <div className="nft-info-panel">
-                <h2 style={{ color: getRarityColor(selectedNft.rarity) }}>{selectedNft.name}</h2>
+                <h2 style={{ color: getRarityColor(selectedNft.rarity), textShadow: `0 0 15px ${getRarityColor(selectedNft.rarity)}60` }}>{selectedNft.name}</h2>
                 <p className="nft-desc">{selectedNft.description}</p>
-                
                 <div className="stats-grid">
                   <div className="stat-box">
                     <label>Rarity</label>
-                    <span style={{ 
-                      backgroundColor: getRarityColor(selectedNft.rarity),
-                      color: '#fff',
-                      padding: '2px 10px',
-                      borderRadius: '10px',
-                      fontSize: '0.9rem',
-                      fontWeight: 'bold',
-                      boxShadow: '0 2px 0 rgba(0,0,0,0.2)',
-                      textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-                    }}>{getRarityName(selectedNft.rarity)}</span>
+                    <span style={{ color: getRarityColor(selectedNft.rarity), fontWeight: 900 }}>{getRarityName(selectedNft.rarity)}</span>
                   </div>
-                  <div className="stat-box">
-                    <label>Weight</label>
-                    <span>{selectedNft.weight}g</span>
-                  </div>
-                  <div className="stat-box">
-                    <label>Type</label>
-                    <span>{FRUITS.find(f => f.level === selectedNft.fruit_type)?.name}</span>
-                  </div>
+                  <div className="stat-box"><label>Weight</label><span>{selectedNft.weight}g</span></div>
+                  <div className="stat-box"><label>Type</label><span>{FRUITS.find(f => f.level === selectedNft.fruit_type)?.name}</span></div>
                 </div>
-
                 <div className="transfer-section">
                   <h4>🎁 Gift / Transfer</h4>
-                  <input 
-                    type="text" 
-                    placeholder="Recipient Address (0x...)"
-                    value={transferAddress}
-                    onChange={(e) => setTransferAddress(e.target.value)}
-                    disabled={isPending}
-                  />
-                  <button 
-                    className="transfer-btn"
-                    onClick={handleTransfer}
-                    disabled={!transferAddress || isPending}
-                  >
-                    {isPending ? 'Sending...' : 'Send NFT'}
-                  </button>
+                  <input type="text" placeholder="Recipient Address (0x...)" value={transferAddress} onChange={(e) => setTransferAddress(e.target.value)} disabled={isPending} />
+                  <button className="transfer-btn" onClick={handleTransfer} disabled={!transferAddress || isPending}>{isPending ? 'Sending...' : 'Send NFT'}</button>
                 </div>
               </div>
             </div>
@@ -288,166 +180,80 @@ export default function NFTCollection() {
       )}
 
       <style>{`
-        .nft-collection-container {
-          padding: 20px;
-          color: white;
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-        .header-section {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        .nft-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 20px;
-        }
+        .nft-collection-container { padding: 20px; color: white; max-width: 1200px; margin: 0 auto; }
+        .header-section { text-align: center; margin-bottom: 30px; }
+        .header-section h2 { font-size: 2.5rem; text-transform: uppercase; background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        
+        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        
         .nft-card {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
+          border-radius: 20px;
+          border: 3px solid var(--card-color);
           overflow: hidden;
-          border: 2px solid transparent;
           cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          position: relative;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+          transform-style: preserve-3d;
         }
         .nft-card:hover {
-          transform: translateY(-5px);
-        }
-        .nft-image-container {
-          height: 180px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(0, 0, 0, 0.2);
-          position: relative;
-          padding: 20px;
-        }
-        .nft-img {
-          max-width: 100%;
-          max-height: 100%;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
-        }
-        .nft-badge {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          color: #000;
-          text-transform: uppercase;
-        }
-        .nft-details {
-          padding: 15px;
-        }
-        .nft-details h3 {
-          margin: 0 0 10px 0;
-          font-size: 1.1rem;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .nft-stat {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.9rem;
-          color: #ccc;
-          margin-bottom: 5px;
-        }
-        .nft-id {
-          font-size: 0.8rem;
-          color: #666;
-          text-align: right;
-          font-family: monospace;
+          transform: translateY(-10px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px var(--card-color);
+          z-index: 10;
         }
         
-        /* Modal Styles */
-        .nft-modal {
-          max-width: 700px;
-          width: 90%;
-        }
-        .modal-split {
-          display: grid;
-          grid-template-columns: 1fr 1.5fr;
-          gap: 20px;
-        }
-        .nft-preview-large {
-          background: rgba(0,0,0,0.2);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        .nft-preview-large img {
+        .nft-image-container { height: 200px; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        .nft-img { max-width: 90%; max-height: 90%; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.4)); transition: transform 0.3s; }
+        .nft-card:hover .nft-img { transform: scale(1.1) rotate(5deg); }
+        
+        .nft-content { padding: 15px; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); border-top: 1px solid rgba(255,255,255,0.1); }
+        .nft-badges { display: flex; gap: 8px; margin-bottom: 10px; }
+        .nft-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .nft-pill.weight { background: #34495e; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .nft-name-pill {
+          background: rgba(0,0,0,0.5);
+          color: #fff;
+          padding: 4px 12px;
+          border-radius: 10px;
+          display: inline-block;
+          margin: 0 0 10px 0; 
+          font-size: 1rem; 
+          white-space: nowrap; 
+          overflow: hidden; 
+          text-overflow: ellipsis; 
+          text-transform: uppercase; 
+          letter-spacing: 0.5px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.1);
           width: 100%;
-          max-width: 250px;
-          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-        }
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          margin: 20px 0;
-        }
-        .stat-box {
-          background: rgba(255,255,255,0.05);
-          padding: 10px;
-          border-radius: 8px;
           text-align: center;
         }
-        .stat-box label {
-          display: block;
-          font-size: 0.8rem;
-          color: #888;
-          margin-bottom: 4px;
-        }
-        .stat-box span {
-          font-weight: bold;
-          font-size: 1rem;
-        }
-        .nft-desc {
-          color: #ccc;
-          font-style: italic;
-          line-height: 1.5;
-        }
-        .transfer-section {
-          background: rgba(255,255,255,0.05);
-          padding: 15px;
-          border-radius: 12px;
-          margin-top: 20px;
-        }
-        .transfer-section input {
-          width: 100%;
-          padding: 10px;
-          margin: 10px 0;
-          border-radius: 8px;
-          border: 1px solid #444;
-          background: #222;
-          color: white;
-        }
-        .transfer-btn {
-          width: 100%;
-          padding: 10px;
-          background: linear-gradient(90deg, #3498db, #2980b9);
-          border: none;
-          border-radius: 8px;
-          color: white;
-          font-weight: bold;
-          cursor: pointer;
-        }
-        .transfer-btn:disabled {
-          background: #555;
-          cursor: not-allowed;
-        }
+        .nft-id { font-size: 0.75rem; color: #888; font-family: monospace; text-align: right; }
         
-        @media (max-width: 600px) {
-          .modal-split {
-            grid-template-columns: 1fr;
-          }
-        }
+        /* Modal Styles */
+        .nft-modal { max-width: 800px; width: 95%; background: #1a1a2e; border: 2px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .modal-split { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .nft-preview-large { border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 40px; border: 1px solid rgba(255,255,255,0.1); }
+        .nft-preview-large img { width: 100%; max-width: 300px; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6)); animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        
+        .nft-info-panel h2 { font-size: 2rem; margin-bottom: 10px; }
+        .nft-desc { color: #ccc; line-height: 1.6; font-style: italic; margin-bottom: 20px; font-size: 1rem; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat-box label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-box span { font-size: 1.1rem; font-weight: bold; color: white; }
+        
+        .transfer-section { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        .transfer-section h4 { margin-top: 0; color: #aaa; }
+        .transfer-section input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; background: #0f0f1a; color: white; font-family: monospace; }
+        .transfer-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #3498db, #2980b9); border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+        .transfer-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4); }
+        .transfer-btn:disabled { background: #444; transform: none; box-shadow: none; cursor: not-allowed; }
+        
+        @media (max-width: 768px) { .modal-split { grid-template-columns: 1fr; } .nft-preview-large { padding: 20px; } .nft-preview-large img { max-width: 150px; } }
       `}</style>
     </div>
   )

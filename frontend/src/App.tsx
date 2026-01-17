@@ -299,10 +299,10 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <h3>⚠️ Warning</h3>
-            <p>Ní đang trong trận. Nếu chuyển tab bây giờ, mọi tiến trình chơi game sẽ bị mất trắng đó nha!</p>
+            <p>You are in a game session. Switching tabs now will cause you to lose all current progress!</p>
             <div className="modal-buttons">
-              <button className="btn-cancel" onClick={cancelTabChange}>Ở LẠI</button>
-              <button className="btn-confirm" onClick={confirmTabChange}>THOÁT</button>
+              <button className="btn-cancel" onClick={cancelTabChange}>STAY</button>
+              <button className="btn-confirm" onClick={confirmTabChange}>LEAVE</button>
             </div>
           </div>
         </div>
