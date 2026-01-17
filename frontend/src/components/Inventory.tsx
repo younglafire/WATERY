@@ -14,8 +14,8 @@ import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 
-const PACKAGE_ID = '0xbdc1103d1dd0ad0c12b2735b22bf299645ff554615241de386f7d381e116e4e8'
-const SEED_ADMIN_CAP = '0x2716812cb3eb670fca61278a827a3e4e963abde36c3b8740781a103be2137b6f'
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
+const SEED_ADMIN_CAP = '0x4d1847752f9470d9cd83a6c76b71801c32623b1c095c8d1f666500223cbfd5ac'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS = 1_000_000_000n
 const INVENTORY_UPGRADE_BASE_COST = 200n // Base cost, increases with level
@@ -324,7 +324,7 @@ export default function Inventory({ inventoryId, playerId, refreshTrigger, onUpd
                   <div className="item-rarity" style={{ color: getRarityColor(fruit.rarity) }}>
                     {getRarityName(fruit.rarity)}
                   </div>
-                  <div className="item-weight">{fruit.weight}g</div>
+                  <div className="item-weight">{fruit.weight >= 1000 ? `${(fruit.weight / 1000).toFixed(2)}kg` : `${fruit.weight}g`}</div>
                 </div>
               </div>
             )

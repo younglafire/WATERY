@@ -26,7 +26,7 @@ import imgLemon from './assets/fruit/Chanh.png'
 import imgWatermelon from './assets/fruit/Dưa hấu.png'
 import imgSeed from './assets/Hạt 1.svg' // Using Hạt 1.svg for the seed icon
 
-const PACKAGE_ID = '0xbdc1103d1dd0ad0c12b2735b22bf299645ff554615241de386f7d381e116e4e8'
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 
 type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard'

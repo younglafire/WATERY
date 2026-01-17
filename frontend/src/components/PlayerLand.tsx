@@ -19,18 +19,19 @@ import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 
-const PACKAGE_ID = '0xbdc1103d1dd0ad0c12b2735b22bf299645ff554615241de386f7d381e116e4e8'
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const RANDOM_OBJECT = '0x8'
 const CLOCK_OBJECT = '0x6'
 
 // Grow times based on rarity (in milliseconds)
-// Rarer fruits take longer to ripen!
+// Rarer fruits take longer but are worth more!
+// Probability: Common 50%, Uncommon 25%, Rare 15%, Epic 8%, Legendary 2%
 const GROW_TIMES_BY_RARITY: Record<number, number> = {
-  1: 15000,   // Common: 15 seconds
-  2: 30000,   // Uncommon: 30 seconds
-  3: 60000,   // Rare: 1 minute
-  4: 120000,  // Epic: 2 minutes
-  5: 300000,  // Legendary: 5 minutes
+  1: 15000,   // Common: 15 seconds - quick for engagement
+  2: 30000,   // Uncommon: 30 seconds - slightly longer
+  3: 60000,   // Rare: 1 minute - noticeable wait
+  4: 180000,  // Epic: 3 minutes - significant investment
+  5: 480000,  // Legendary: 8 minutes - real commitment, max reward
 }
 
 // Get grow time for a fruit based on its rarity
@@ -49,7 +50,7 @@ const formatTimeLeft = (seconds: number): string => {
 }
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x2716812cb3eb670fca61278a827a3e4e963abde36c3b8740781a103be2137b6f'
+const SEED_ADMIN_CAP = '0x4d1847752f9470d9cd83a6c76b71801c32623b1c095c8d1f666500223cbfd5ac'
 
 // SEED coin type and decimals
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
@@ -696,6 +697,39 @@ export default function PlayerLand({
     )
   }
 
+  // Mint test seeds (for testing/hackathon)
+  const mintTestSeeds = async () => {
+    setTxStatus('🌱 Minting 1000 test seeds...')
+    const tx = new Transaction()
+    
+    // Multiply by 10^9 for 9 decimals
+    const amountWithDecimals = 1000n * seedScale
+    
+    tx.moveCall({
+      target: `${PACKAGE_ID}::player::mint_seeds`,
+      arguments: [
+        tx.object(SEED_ADMIN_CAP),
+        tx.pure.u64(amountWithDecimals),
+      ],
+    })
+
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: async (result) => {
+          await suiClient.waitForTransaction({ digest: result.digest })
+          if (onDataChanged) await onDataChanged()
+          setTxStatus('🎉 Got 1000 seeds!')
+          setTimeout(() => setTxStatus(''), 2000)
+        },
+        onError: (error) => {
+          console.error('Error minting seeds:', error)
+          setTxStatus('Error: ' + error.message)
+        },
+      }
+    )
+  }
+
   // Get effective grow time for a slot (accounting for speed boosts from contract)
   const getEffectiveGrowTime = (slot: Slot): number => {
     if (!slot.fruit) return 0
@@ -1184,6 +1218,14 @@ export default function PlayerLand({
             >
               🏡 Buy New Land — {Number(NEW_LAND_COST)} SEED
             </button>
+            <button 
+              onClick={mintTestSeeds} 
+              disabled={isPending}
+              className="mint-test-btn"
+              title="Mint 1000 free test seeds (hackathon only)"
+            >
+              🎁 Mint 1000 Test Seeds
+            </button>
           </div>
 
           {/* Tool Selection Bar - Always shown, tools cost SEED to use */}
@@ -1250,7 +1292,7 @@ export default function PlayerLand({
                           <span className="slot-rarity" style={{ color: RARITY_COLORS[slot.fruit.rarity - 1] }}>
                             {RARITIES[slot.fruit.rarity - 1]}
                           </span>
-                          <span className="slot-weight"> • {slot.fruit.weight}g</span>
+                          <span className="slot-weight"> • {slot.fruit.weight >= 1000 ? `${(slot.fruit.weight / 1000).toFixed(2)}kg` : `${slot.fruit.weight}g`}</span>
                         </div>
                       </div>
                       <span className="slot-harvest">🌾 Tap to Harvest</span>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x0f183130337b219941e48e27a2bfeebafc88aed7c674ee165cbaa55ab2cc4583'
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const CLOCK_OBJECT = '0x6'
 
 // Copied from FruitGame.tsx

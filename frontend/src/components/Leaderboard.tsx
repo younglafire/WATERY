@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x0f183130337b219941e48e27a2bfeebafc88aed7c674ee165cbaa55ab2cc4583'
-const LEADERBOARD_CONFIG_ID = '0x96e41f44948ff369baaf69c7532348007f26c2e40d6a2e77f5c7a96dbd97c04a'
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
+const LEADERBOARD_CONFIG_ID = '0xba8c7f6735c3f7d221c056a102be5afa413d444b4c296fb7db4a9f001397943c'
 const JOIN_FEE_MIST = 10_000_000 // 0.01 SUI in MIST
 const SUI_DECIMALS = 1_000_000_000 // 1 SUI = 10^9 MIST
 const LEADERBOARD_ROUND_TYPE = `${PACKAGE_ID}::leaderboard::LeaderboardRound`
