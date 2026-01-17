@@ -2,16 +2,38 @@
 # This file should be checked in.
 
 [move]
-version = 4
+version = 3
+manifest_digest = "7887A9A1DAA0DEE30F76EE7A6B6CD167E86017125E25C2A28C76663344B45A64"
+deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
+
+[[move.package]]
+id = "MoveStdlib"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "main", subdir = "crates\\sui-framework\\packages\\move-stdlib" }
+
+[[move.package]]
+id = "Sui"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "main", subdir = "crates/sui-framework/packages/sui-framework" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[move.toolchain-version]
+compiler-version = "1.62.0"
+edition = "2024.beta"
+flavor = "sui"
 
 [pinned.testnet.MoveStdlib]
-source = { git = "https://github.com/MystenLabs/sui.git", subdir = 'crates\sui-framework\packages\move-stdlib', rev = "880a4416a33e8a022e3db6c3f0492010de5b525c" }
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = 'crates\sui-framework\packages\move-stdlib', rev = "658ff31cf95c78106d6760b1a3791314b6e593ae" }
 use_environment = "testnet"
 manifest_digest = "C4FE4C91DE74CBF223B2E380AE40F592177D21870DC2D7EB6227D2D694E05363"
 deps = {}
 
 [pinned.testnet.Sui]
-source = { git = "https://github.com/MystenLabs/sui.git", subdir = 'crates\sui-framework\packages\sui-framework', rev = "880a4416a33e8a022e3db6c3f0492010de5b525c" }
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = 'crates\sui-framework\packages\sui-framework', rev = "658ff31cf95c78106d6760b1a3791314b6e593ae" }
 use_environment = "testnet"
 manifest_digest = "7AFB66695545775FBFBB2D3078ADFD084244D5002392E837FDE21D9EA1C6D01C"
 deps = { MoveStdlib = "MoveStdlib" }
@@ -21,3 +43,11 @@ source = { root = true }
 use_environment = "testnet"
 manifest_digest = "F84AF24ACE8E28B7DB145E49E4DDA67983EC475D4B4CDFC7DE01539421C740BC"
 deps = { Sui = "Sui" }
+
+[env]
+
+[env.testnet]
+chain-id = "4c78adac"
+original-published-id = "0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503"
+latest-published-id = "0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503"
+published-version = "1"

@@ -15,6 +15,7 @@ module contract::land {
     use sui::random::{Random, new_generator};
     use sui::clock::Clock;
     use sui::coin::Coin;
+    use std::string::String;
     use contract::utils;
     use contract::events;
     use contract::seed::{Self, SEED, SeedAdminCap};
@@ -29,8 +30,10 @@ module contract::land {
         fruit_type: u8,
         rarity: u8,
         weight: u64,
+        image_url: String,
         seeds_used: u64,
         planted_at: u64,
+        speed_boost_ms: u64,  // Total speed boost applied (in ms)
     }
 
     /// Player's farming land with planting slots
@@ -207,6 +210,7 @@ module contract::land {
         
         // Calculate rarity based on weight relative to fruit type
         let rarity = utils::calculate_weight_based_rarity(fruit_type, weight);
+        let image_url = utils::get_fruit_image_url(fruit_type);
         
         let now = sui::clock::timestamp_ms(clock);
         
@@ -214,8 +218,10 @@ module contract::land {
             fruit_type,
             rarity,
             weight,
+            image_url,
             seeds_used: seeds_to_use,
             planted_at: now,
+            speed_boost_ms: 0,  // No speed boost initially
         };
         
         // Place in slot
@@ -284,13 +290,16 @@ module contract::land {
                 
                 // Calculate rarity based on weight relative to fruit type
                 let rarity = utils::calculate_weight_based_rarity(fruit_type, weight);
-                
+                let image_url = utils::get_fruit_image_url(fruit_type);
+
                 let planted = PlantedFruit {
                     fruit_type,
                     rarity,
                     weight,
+                    image_url,
                     seeds_used: seeds_per_slot,
                     planted_at: now,
+                    speed_boost_ms: 0,  // No speed boost initially
                 };
                 
                 *land.slots.borrow_mut(i) = option::some(planted);
@@ -326,12 +335,13 @@ module contract::land {
             if (option::is_some(land.slots.borrow(i))) {
                 let fruit = option::borrow(land.slots.borrow(i));
                 
-                // Check if fruit is ready
-                if (utils::is_fruit_ready(fruit.planted_at, now)) {
+                // Check if fruit is ready (using rarity-based grow time and speed boost)
+                if (utils::is_fruit_ready_with_boost(fruit.planted_at, now, fruit.rarity, fruit.speed_boost_ms)) {
                     // Extract fruit data
                     let fruit_type = fruit.fruit_type;
                     let rarity = fruit.rarity;
                     let weight = fruit.weight;
+                    let image_url = fruit.image_url;
                     
                     // Add to inventory
                     player::add_fruit_to_inventory(
@@ -339,6 +349,7 @@ module contract::land {
                         fruit_type,
                         rarity,
                         weight,
+                        image_url,
                         clock
                     );
 
@@ -357,6 +368,113 @@ module contract::land {
             };
             i = i + 1;
         };
+    }
+
+    // ============================================================================
+    // TOOL FUNCTIONS
+    // ============================================================================
+
+    /// Use watering can on a planted fruit to speed up growth by 25%
+    entry fun use_watering_can(
+        land: &mut PlayerLand,
+        slot_index: u64,
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
+        _ctx: &mut TxContext
+    ) {
+        // Validate slot has a fruit
+        assert!(slot_index < land.max_slots, utils::e_invalid_slot());
+        assert!(option::is_some(land.slots.borrow(slot_index)), utils::e_slot_empty());
+        
+        // Check payment
+        let cost = utils::watering_can_cost();
+        let coin_value = seed::value(&payment);
+        assert!(coin_value >= cost, utils::e_insufficient_seeds());
+        
+        // Burn payment (return change if overpaid)
+        if (coin_value > cost) {
+            let mut payment_mut = payment;
+            let change = seed::split(&mut payment_mut, coin_value - cost, _ctx);
+            transfer::public_transfer(change, land.owner);
+            seed::burn(admin_cap, payment_mut);
+        } else {
+            seed::burn(admin_cap, payment);
+        };
+        
+        // Apply 25% speed boost
+        let fruit = option::borrow(land.slots.borrow(slot_index));
+        let grow_time = utils::get_grow_time_by_rarity(fruit.rarity);
+        let boost = grow_time / 4;  // 25%
+        
+        let fruit_mut = option::borrow_mut(land.slots.borrow_mut(slot_index));
+        fruit_mut.speed_boost_ms = fruit_mut.speed_boost_ms + boost;
+    }
+
+    /// Use fertilizer on a planted fruit to speed up growth by 50%
+    entry fun use_fertilizer(
+        land: &mut PlayerLand,
+        slot_index: u64,
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
+        _ctx: &mut TxContext
+    ) {
+        // Validate slot has a fruit
+        assert!(slot_index < land.max_slots, utils::e_invalid_slot());
+        assert!(option::is_some(land.slots.borrow(slot_index)), utils::e_slot_empty());
+        
+        // Check payment
+        let cost = utils::fertilizer_cost();
+        let coin_value = seed::value(&payment);
+        assert!(coin_value >= cost, utils::e_insufficient_seeds());
+        
+        // Burn payment (return change if overpaid)
+        if (coin_value > cost) {
+            let mut payment_mut = payment;
+            let change = seed::split(&mut payment_mut, coin_value - cost, _ctx);
+            transfer::public_transfer(change, land.owner);
+            seed::burn(admin_cap, payment_mut);
+        } else {
+            seed::burn(admin_cap, payment);
+        };
+        
+        // Apply 50% speed boost
+        let fruit = option::borrow(land.slots.borrow(slot_index));
+        let grow_time = utils::get_grow_time_by_rarity(fruit.rarity);
+        let boost = grow_time / 2;  // 50%
+        
+        let fruit_mut = option::borrow_mut(land.slots.borrow_mut(slot_index));
+        fruit_mut.speed_boost_ms = fruit_mut.speed_boost_ms + boost;
+    }
+
+    /// Use shovel to remove a planted fruit (burns the fruit)
+    entry fun use_shovel(
+        land: &mut PlayerLand,
+        slot_index: u64,
+        payment: Coin<SEED>,
+        admin_cap: &mut SeedAdminCap,
+        _ctx: &mut TxContext
+    ) {
+        // Validate slot has a fruit
+        assert!(slot_index < land.max_slots, utils::e_invalid_slot());
+        assert!(option::is_some(land.slots.borrow(slot_index)), utils::e_slot_empty());
+        
+        // Check payment
+        let cost = utils::shovel_cost();
+        let coin_value = seed::value(&payment);
+        assert!(coin_value >= cost, utils::e_insufficient_seeds());
+        
+        // Burn payment (return change if overpaid)
+        if (coin_value > cost) {
+            let mut payment_mut = payment;
+            let change = seed::split(&mut payment_mut, coin_value - cost, _ctx);
+            transfer::public_transfer(change, land.owner);
+            seed::burn(admin_cap, payment_mut);
+        } else {
+            seed::burn(admin_cap, payment);
+        };
+        
+        // Clear the slot (fruit is burned/removed)
+        *land.slots.borrow_mut(slot_index) = option::none();
     }
 
     // ============================================================================
@@ -399,13 +517,21 @@ module contract::land {
         fruit.weight
     }
 
+    public fun get_fruit_image_url(fruit: &PlantedFruit): String {
+        fruit.image_url
+    }
+
     public fun get_planted_at(fruit: &PlantedFruit): u64 {
         fruit.planted_at
     }
 
+    public fun get_speed_boost(fruit: &PlantedFruit): u64 {
+        fruit.speed_boost_ms
+    }
+
     public fun is_fruit_ready_to_harvest(fruit: &PlantedFruit, clock: &Clock): bool {
         let now = sui::clock::timestamp_ms(clock);
-        utils::is_fruit_ready(fruit.planted_at, now)
+        utils::is_fruit_ready_with_boost(fruit.planted_at, now, fruit.rarity, fruit.speed_boost_ms)
     }
 
     /// Count empty slots
@@ -421,7 +547,7 @@ module contract::land {
         count
     }
 
-    /// Count ready-to-harvest fruits
+    /// Count ready-to-harvest fruits (using rarity-based grow time and speed boost)
     public fun count_ready_fruits(land: &PlayerLand, clock: &Clock): u64 {
         let now = sui::clock::timestamp_ms(clock);
         let mut count = 0u64;
@@ -429,7 +555,7 @@ module contract::land {
         while (i < land.max_slots) {
             if (option::is_some(land.slots.borrow(i))) {
                 let fruit = option::borrow(land.slots.borrow(i));
-                if (utils::is_fruit_ready(fruit.planted_at, now)) {
+                if (utils::is_fruit_ready_with_boost(fruit.planted_at, now, fruit.rarity, fruit.speed_boost_ms)) {
                     count = count + 1;
                 };
             };

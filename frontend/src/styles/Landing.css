@@ -1,0 +1,116 @@
+/* ===================================================
+   1. LANDING PAGE CONTAINER
+   =================================================== */
+.landing-page {
+  min-height: calc(100vh - 70px); /* Khớp với chiều cao Header */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  z-index: 10;
+  position: relative;
+  /* Đảm bảo trang landing luôn hiện mượt mà */
+  animation: fadeIn 1s ease-out; 
+}
+
+.landing-content {
+  max-width: 800px;
+  width: 100%;
+}
+
+/* ===================================================
+   2. TYPOGRAPHY (TIÊU ĐỀ & NHÃN)
+   =================================================== */
+.badge {
+  background: rgba(254, 202, 87, 0.1);
+  color: #feca57;
+  padding: 6px 16px;
+  border-radius: 50px;
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-bottom: 25px;
+  border: 1px solid rgba(254, 202, 87, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero-title {
+  /* clamp giúp chữ tự to nhỏ theo màn hình mà không cần dùng quá nhiều Media Query */
+  font-size: clamp(2.5rem, 10vw, 5rem); 
+  line-height: 1.1;
+  margin-bottom: 20px;
+  background: linear-gradient(to right, #fff, #feca57, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+}
+
+.hero-title span {
+  font-size: 1.2rem;
+  vertical-align: middle;
+  background: #27ae60;
+  -webkit-text-fill-color: white;
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-left: 10px;
+  text-shadow: none;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: #aaa;
+  margin-bottom: 50px;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===================================================
+   3. CONNECT WALLET CTA (NÚT HÀNH ĐỘNG CHÍNH)
+   =================================================== */
+.big-connect-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Phóng to và tạo hiệu ứng cho nút Connect từ dApp Kit */
+.big-connect-wrapper button {
+  transform: scale(1.6) !important;
+  margin: 30px 0 !important;
+  transition: all 0.3s ease !important;
+  /* Hiệu ứng pulse đã định nghĩa trong Base.css */
+  animation: pulse-button 2s infinite; 
+}
+
+.big-connect-wrapper button:hover {
+  transform: scale(1.7) !important;
+  box-shadow: 0 0 30px rgba(108, 92, 231, 0.5) !important;
+}
+
+.cta-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  margin-top: 20px;
+}
+
+/* ===================================================
+   4. RESPONSIVE (TỐI ƯU MOBILE)
+   =================================================== */
+@media (max-width: 600px) {
+  .hero-title {
+    font-size: 3rem;
+  }
+  .hero-subtitle {
+    font-size: 1rem;
+    padding: 0 10px;
+  }
+  .big-connect-wrapper button {
+    transform: scale(1.3) !important; /* Thu nhỏ bớt trên mobile để không bị tràn */
+  }
+}

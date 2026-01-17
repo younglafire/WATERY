@@ -1,0 +1,373 @@
+/* ===================================================
+   1. COMMON BUTTONS (HỆ THỐNG NÚT HOẠT HÌNH)
+   =================================================== */
+button {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: all 0.1s; /* Chuyển động nhanh cho cảm giác hoạt hình */
+  font-weight: 900; /* Chữ siêu đậm */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  outline: none;
+  
+  /* Tạo hình khối 3D */
+  border-radius: 20px;
+  border: 3px solid rgba(0,0,0,0.1); /* Viền chìm nhẹ */
+  transform: translateY(0);
+}
+
+/* Hiệu ứng bấm nút (Nhún xuống) */
+button:active {
+  transform: translateY(4px) !important;
+  box-shadow: 0 0 0 transparent !important;
+  filter: brightness(0.9);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(1);
+  transform: translateY(4px);
+  box-shadow: none !important;
+}
+
+/* --- PLAY GAME / RESTART BUTTON (Màu Tím Mộng Mơ) --- */
+.btn-restart {
+  padding: 1rem 3rem;
+  font-size: 1.5rem !important;
+  border-radius: 30px;
+  
+  background: #9b59b6;
+  color: white;
+  border: 4px solid #fff; /* Viền trắng nổi bật */
+  box-shadow: 0 8px 0 #6c3483; /* Bóng đổ cứng màu tím đậm */
+}
+
+.btn-restart:hover {
+  background: #a569bd;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 0 #6c3483;
+}
+
+.btn-restart:active {
+  transform: translateY(8px) !important;
+  box-shadow: 0 0 0 #6c3483 !important;
+}
+
+/* --- MINT / HARVEST BUTTON (Màu Vàng/Cam Rực Rỡ) --- */
+.btn-mint, .btn-harvest {
+  padding: 0.8rem 1.5rem;
+  border-radius: 16px;
+  color: #5d4037; /* Chữ màu nâu đất */
+  
+  background: #f1c40f;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 0 #d35400; /* Bóng cam đậm */
+}
+
+.btn-harvest {
+  background: linear-gradient(to bottom, #f1c40f, #f39c12);
+}
+
+.btn-mint:hover, .btn-harvest:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #d35400;
+}
+
+.btn-mint:active, .btn-harvest:active {
+  transform: translateY(6px) !important;
+  box-shadow: 0 0 0 #d35400 !important;
+}
+
+/* ===================================================
+   2. GAME STATS (BẢNG THÔNG SỐ TRÊN CANVAS)
+   =================================================== */
+.game-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05); /* Hiệu ứng kính tối */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  align-items: center;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 600px; /* Khớp với chiều rộng canvas mới */
+  justify-content: space-around;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #feca57;
+  text-shadow: 0 0 10px rgba(254, 202, 87, 0.3);
+}
+
+/* Khu vực hiển thị quả tiếp theo */
+.stat.next {
+  min-width: auto;
+}
+.next-fruit-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.next-fruit-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+}
+
+.stat.seeds .stat-value {
+  color: #2ecc71;
+  text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+/* ===================================================
+   3. CANVAS CONTAINER (KHUNG CHƠI GAME)
+   =================================================== */
+.fruit-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-container {
+  position: relative;
+  width: 600px;
+  height: 800px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  background: #2c2c44; /* Màu nền tối hơn */
+  border: 4px solid #8d6e63;
+  z-index: 10;
+}
+
+.canvas-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===================================================
+   4. GAME OVERLAYS (MÀN HÌNH CHỜ/KẾT THÚC)
+   =================================================== */
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  text-align: center;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.game-overlay button {
+  pointer-events: auto; 
+}
+
+.game-overlay h2 {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.instructions {
+  margin: 1.5rem 0;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 12px;
+  border-left: 4px solid #feca57;
+}
+
+.instructions p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-display {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #feca57;
+  margin: 1rem 0;
+  text-shadow: 0 0 20px rgba(254, 202, 87, 0.4);
+}
+
+/* ===================================================
+   5. MODAL SYSTEM (HỆ THỐNG CỬA SỔ LỆNH)
+   =================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+}
+
+.modal, .modal-content {
+  background: #2c3e50; /* Nền xanh đậm phẳng */
+  padding: 2rem;
+  border-radius: 30px;
+  min-width: 320px;
+  max-width: 450px;
+  border: 5px solid #fff; /* Viền trắng to */
+  box-shadow: 0 15px 0 rgba(0,0,0,0.4); /* Bóng đổ cứng */
+  text-align: center;
+}
+
+.modal-input input {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 15px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  background: #34495e;
+  color: #f1c40f;
+  border: 3px solid #2c3e50;
+  box-shadow: inset 0 4px 0 rgba(0,0,0,0.2); /* Bóng đổ trong */
+  margin: 1rem 0;
+}
+
+.modal-buttons, .modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Nút Confirm (Đỏ) */
+.btn-confirm { 
+  background: #e74c3c; 
+  color: white; 
+  flex: 1;
+  border-radius: 15px;
+  box-shadow: 0 5px 0 #c0392b;
+}
+.btn-confirm:active { box-shadow: 0 0 0 #c0392b !important; }
+
+/* Nút Cancel (Xám) */
+.btn-cancel { 
+  background: #95a5a6; 
+  color: white; 
+  flex: 1; 
+  border-radius: 15px;
+  box-shadow: 0 5px 0 #7f8c8d;
+}
+.btn-cancel:active { box-shadow: 0 0 0 #7f8c8d !important; }
+
+/* ===================================================
+   6. TRANSACTION TOASTS (THÔNG BÁO GIAO DỊCH)
+   =================================================== */
+.tx-status {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #27ae60; /* Màu xanh lá tươi */
+  color: white;
+  padding: 12px 24px;
+  border-radius: 50px;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: bold;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 0 #1e8449;
+}
+
+/* ===================================================
+   7. FRUIT EVOLUTION LEGEND (CHÚ THÍCH TIẾN HÓA)
+   =================================================== */
+.fruit-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50px;
+  margin-top: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fruit-img-legend {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.fruit-legend span {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===================================================
+   8. SPECIAL OVERRIDES
+   =================================================== */
+.mint-during-game {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  z-index: 30;
+}
+
+@media (max-width: 480px) {
+  .canvas-container {
+    width: 320px;
+    height: 480px;
+  }
+  .game-stats {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    max-width: 320px;
+  }
+  .stat-value { font-size: 1.2rem; }
+  .next-fruit-display { width: 40px; height: 40px; }
+  .next-fruit-img { width: 30px; height: 30px; }
+}

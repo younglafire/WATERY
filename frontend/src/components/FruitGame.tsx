@@ -3,17 +3,29 @@ import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-ki
 import { Transaction } from '@mysten/sui/transactions'
 import Matter from 'matter-js'
 
-const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
+// Fruit Assets
+import imgCherry from '../assets/fruit/Cherry.png'
+import imgGrape from '../assets/fruit/Nho.png'
+import imgOrange from '../assets/fruit/Cam.png'
+import imgLemon from '../assets/fruit/Chanh.png'
+import imgApple from '../assets/fruit/Táo.png'
+import imgPear from '../assets/fruit/Lê.png'
+import imgPeach from '../assets/fruit/Đào.png'
+import imgPineapple from '../assets/fruit/Thơm.png'
+import imgMelon from '../assets/fruit/Dưa lưới.png'
+import imgWatermelon from '../assets/fruit/Dưa hấu.png'
+
+const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x63a07081520fe716d6a411c773d40313e79aaff63e07e3bff3cf129151b3246d'
+const SEED_ADMIN_CAP = '0x4d1847752f9470d9cd83a6c76b71801c32623b1c095c8d1f666500223cbfd5ac'
 
 // SEED coin has 9 decimals, so multiply by 10^9
 const SEED_DECIMALS = 1_000_000_000n
 
 // Game constants
-const GAME_WIDTH = 400
-const GAME_HEIGHT = 600
+const GAME_WIDTH = 600
+const GAME_HEIGHT = 800
 const WALL_THICKNESS = 20
 const PREVIEW_BALL_Y = 50
 const LOSE_HEIGHT = 100
@@ -21,25 +33,36 @@ const DROP_COOLDOWN = 500
 
 // Physics settings (like the reference game)
 const FRICTION = {
-  friction: 0.006,
-  frictionStatic: 0.006,
+  friction: 0.005,      // Slippery but not ice
+  frictionStatic: 0.005,
   frictionAir: 0,
-  restitution: 0.1,
+  restitution: 0.5,     // Much bouncier! (Old was 0.1) - This creates chaos
 }
 
-// Fruit configurations with emojis
+// Fruit configurations with images (Scaled up for 600px width - BIGGER!)
 const FRUITS = [
-  { level: 1, emoji: '🍒', radius: 15, name: 'Cherry', scoreValue: 1 },
-  { level: 2, emoji: '🍇', radius: 19, name: 'Grape', scoreValue: 3 },
-  { level: 3, emoji: '🍊', radius: 24, name: 'Orange', scoreValue: 6 },
-  { level: 4, emoji: '🍋', radius: 28, name: 'Lemon', scoreValue: 10 },
-  { level: 5, emoji: '🍎', radius: 33, name: 'Apple', scoreValue: 15 },
-  { level: 6, emoji: '🍐', radius: 38, name: 'Pear', scoreValue: 21 },
-  { level: 7, emoji: '🍑', radius: 44, name: 'Peach', scoreValue: 28 },
-  { level: 8, emoji: '🍍', radius: 50, name: 'Pineapple', scoreValue: 36 },
-  { level: 9, emoji: '🍈', radius: 58, name: 'Melon', scoreValue: 45 },
-  { level: 10, emoji: '🍉', radius: 68, name: 'Watermelon', scoreValue: 55 },
+  { level: 1, image: imgCherry, radius: 26, name: 'Cherry', scoreValue: 1 },
+  { level: 2, image: imgGrape, radius: 36, name: 'Grape', scoreValue: 3 },
+  { level: 3, image: imgOrange, radius: 48, name: 'Orange', scoreValue: 6 },
+  { level: 4, image: imgLemon, radius: 58, name: 'Lemon', scoreValue: 10 },
+  { level: 5, image: imgApple, radius: 70, name: 'Apple', scoreValue: 15 },
+  { level: 6, image: imgPear, radius: 84, name: 'Pear', scoreValue: 21 },
+  { level: 7, image: imgPeach, radius: 98, name: 'Peach', scoreValue: 28 },
+  { level: 8, image: imgPineapple, radius: 114, name: 'Pineapple', scoreValue: 36 },
+  { level: 9, image: imgMelon, radius: 132, name: 'Melon', scoreValue: 45 },
+  { level: 10, image: imgWatermelon, radius: 155, name: 'Watermelon', scoreValue: 55 },
 ]
+
+// Helper to get random fruit index (0-4) like original Suika
+// Cherry (30%), Grape (25%), Orange (20%), Lemon (15%), Apple (10%)
+const getRandomDroppableFruitIndex = () => {
+  const rand = Math.random()
+  if (rand < 0.30) return 0 // Cherry
+  if (rand < 0.55) return 1 // Grape
+  if (rand < 0.75) return 2 // Orange
+  if (rand < 0.90) return 3 // Lemon
+  return 4                  // Apple (The chaos maker)
+}
 
 // Game states
 const GameState = {
@@ -74,6 +97,10 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
   const currentFruitIndexRef = useRef(0)
   const nextFruitIndexRef = useRef(0)
   
+  // State for assets loading
+  const [areAssetsLoaded, setAreAssetsLoaded] = useState(false)
+  const fruitImageElements = useRef<HTMLImageElement[]>([])
+
   const [, setDisplayCurrentFruit] = useState(0)
   const [displayNextFruit, setDisplayNextFruit] = useState(0)
   const [score, setScore] = useState(0)
@@ -83,6 +110,31 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
   const [isGameOver, setIsGameOver] = useState(false)
   
   const fruitsMergedRef = useRef<number[]>(Array(FRUITS.length).fill(0))
+
+  // Pre-load all fruit images before starting the game
+  useEffect(() => {
+    const images = FRUITS.map(f => {
+      const img = new Image()
+      img.src = f.image
+      return img
+    })
+
+    let loadedCount = 0
+    images.forEach(img => {
+      img.onload = () => {
+        loadedCount++
+        if (loadedCount === images.length) {
+          fruitImageElements.current = images
+          setAreAssetsLoaded(true)
+        }
+      }
+      // Handle error case as well, maybe with a fallback
+      img.onerror = () => {
+        console.error("Failed to load an image.")
+        // Potentially handle error, for now, we'll just log it
+      }
+    })
+  }, [])
 
   // Notify parent component about game state
   useEffect(() => {
@@ -124,9 +176,9 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     return body
   }, [])
 
-  // Set next fruit size (random 0-4 for small fruits)
+  // Set next fruit size (weighted random 0-2)
   const setNextFruitSize = useCallback(() => {
-    const next = Math.floor(Math.random() * 5)
+    const next = getRandomDroppableFruitIndex()
     nextFruitIndexRef.current = next
     setDisplayNextFruit(next)
   }, [])
@@ -189,7 +241,8 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
 
   // Initialize Matter.js engine
   useEffect(() => {
-    if (!canvasRef.current) return
+    // Only run setup after all images have been loaded
+    if (!canvasRef.current || !areAssetsLoaded) return
 
     const engine = Matter.Engine.create()
     engineRef.current = engine
@@ -333,7 +386,13 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     Matter.Runner.run(runner, engine)
     Matter.Render.run(render)
 
-    // Custom emoji rendering
+    // Custom image rendering
+    const fruitImages: HTMLImageElement[] = FRUITS.map(f => {
+      const img = new Image()
+      img.src = f.image
+      return img
+    })
+
     Matter.Events.on(render, 'afterRender', () => {
       const context = render.canvas.getContext('2d')
       if (!context) return
@@ -345,25 +404,26 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
         if (fruitBody.sizeIndex === undefined) continue
 
         const fruit = FRUITS[fruitBody.sizeIndex]
-        if (!fruit) continue
+        const img = fruitImages[fruitBody.sizeIndex]
+        if (!fruit || !img) continue
 
         context.save()
         context.translate(fruitBody.position.x, fruitBody.position.y)
         context.rotate(fruitBody.angle)
-        context.font = `${fruit.radius * 2}px Arial`
-        context.textAlign = 'center'
-        context.textBaseline = 'middle'
-        context.fillText(fruit.emoji, 0, 0)
+        
+        // Draw image centered on body
+        const size = fruit.radius * 2
+        context.drawImage(img, -fruit.radius, -fruit.radius, size, size)
         context.restore()
       }
     })
 
     // Initialize first fruit
-    const initialFruit = Math.floor(Math.random() * 5)
+    const initialFruit = getRandomDroppableFruitIndex()
     currentFruitIndexRef.current = initialFruit
     setDisplayCurrentFruit(initialFruit)
     
-    const nextFruit = Math.floor(Math.random() * 5)
+    const nextFruit = getRandomDroppableFruitIndex()
     nextFruitIndexRef.current = nextFruit
     setDisplayNextFruit(nextFruit)
 
@@ -372,11 +432,11 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
       Matter.Runner.stop(runner)
       Matter.Engine.clear(engine)
     }
-  }, [generateFruitBody, calculateScore, calculateSeeds, loseGame])
+  }, [generateFruitBody, calculateScore, calculateSeeds, loseGame, areAssetsLoaded])
 
   // Start game
   const startGame = useCallback(() => {
-    if (!engineRef.current) return
+    if (!engineRef.current || !areAssetsLoaded) return
 
     setGameStarted(true)
     setIsGameOver(false)
@@ -389,12 +449,31 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
       runnerRef.current.enabled = true
     }
 
+    // Force canvas resize just in case
+    if (renderRef.current && canvasRef.current) {
+        renderRef.current.canvas.width = GAME_WIDTH;
+        renderRef.current.canvas.height = GAME_HEIGHT;
+    }
+
+    // Clear existing bodies (fruits)
+    const bodies = Matter.Composite.allBodies(engineRef.current.world)
+    bodies.forEach(body => {
+      if (body.label === 'fruit') {
+        Matter.Composite.remove(engineRef.current!.world, body)
+      }
+    })
+
+    // Remove old preview if exists
+    if (previewBallRef.current) {
+      Matter.Composite.remove(engineRef.current.world, previewBallRef.current)
+    }
+
     // Create preview ball
-    const initialFruit = Math.floor(Math.random() * 5)
+    const initialFruit = getRandomDroppableFruitIndex()
     currentFruitIndexRef.current = initialFruit
     setDisplayCurrentFruit(initialFruit)
     
-    const nextFruit = Math.floor(Math.random() * 5)
+    const nextFruit = getRandomDroppableFruitIndex()
     nextFruitIndexRef.current = nextFruit
     setDisplayNextFruit(nextFruit)
 
@@ -404,7 +483,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     })
     previewBallRef.current = preview
     Matter.Composite.add(engineRef.current.world, preview)
-  }, [generateFruitBody])
+  }, [generateFruitBody, areAssetsLoaded])
 
   // Reset game
   const resetGame = useCallback(() => {
@@ -430,10 +509,16 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect) return
 
+    // Calculate scale factor in case canvas is resized by CSS
+    const scaleX = GAME_WIDTH / rect.width
+    
+    // Get relative X position and scale it up to game coordinates
+    const relativeX = (e.clientX - rect.left) * scaleX
+
     const currentRadius = FRUITS[currentFruitIndexRef.current].radius
     const x = Math.max(
-      currentRadius + 5,
-      Math.min(GAME_WIDTH - currentRadius - 5, e.clientX - rect.left)
+      currentRadius + WALL_THICKNESS,
+      Math.min(GAME_WIDTH - currentRadius - WALL_THICKNESS, relativeX)
     )
 
     Matter.Body.setPosition(previewBallRef.current, { x, y: PREVIEW_BALL_Y })
@@ -442,7 +527,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
   // Handle click to drop fruit
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!gameStarted) {
-      startGame()
+      // If game hasn't started, don't drop fruit on click (use the button instead)
       return
     }
 
@@ -452,10 +537,14 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect) return
 
+    // Calculate scale factor
+    const scaleX = GAME_WIDTH / rect.width
+    const relativeX = (e.clientX - rect.left) * scaleX
+
     const currentRadius = FRUITS[currentFruitIndexRef.current].radius
     const x = Math.max(
-      currentRadius + 5,
-      Math.min(GAME_WIDTH - currentRadius - 5, e.clientX - rect.left)
+      currentRadius + WALL_THICKNESS,
+      Math.min(GAME_WIDTH - currentRadius - WALL_THICKNESS, relativeX)
     )
 
     gameStateRef.current = GameState.DROP
@@ -509,38 +598,44 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
           <span className="stat-value">{seedsPending}</span>
         </div>
         {gameStarted && !isGameOver && (
-          <div className="stat next">
-            <span className="stat-label">Next</span>
-            <div className="next-fruit-emoji">
-              {FRUITS[displayNextFruit].emoji}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Game Canvas */}
-      <div className="canvas-container">
-        <canvas
-          ref={canvasRef}
-          onMouseMove={handleMouseMove}
-          onClick={handleClick}
-          style={{ cursor: (gameStarted && !isGameOver && gameStateRef.current === GameState.READY) ? 'pointer' : 'default' }}
-        />
-        
-        {/* Start Screen */}
-        {!gameStarted && (
-          <div className="game-overlay start-screen">
-            <h2>🍉 Fruit Merge</h2>
-            <p>Click to start!</p>
-            <div className="instructions">
-              <p>🍒 Drop fruits to merge</p>
-              <p>🌱 Same fruits = bigger fruit + seeds</p>
-              <p>🌾 Mint seeds on-chain when ready</p>
-            </div>
-          </div>
-        )}
-
-        {/* Game Over */}
+                  <div className="stat next">
+                    <span className="stat-label">Next</span>
+                    <div className="next-fruit-display">
+                      <img src={FRUITS[displayNextFruit].image} alt="Next fruit" className="next-fruit-img" />
+                    </div>
+                  </div>
+                )}
+              </div>
+          
+              {/* Game Canvas */}
+              <div className="canvas-container">
+                <canvas
+                  ref={canvasRef}
+                  onMouseMove={handleMouseMove}
+                  onClick={handleClick}
+                  style={{ cursor: (gameStarted && !isGameOver && gameStateRef.current === GameState.READY) ? 'pointer' : 'default' }}
+                />
+                
+                        {/* Start Screen */}
+                        {!gameStarted && (
+                          <div className="game-overlay start-screen">
+                            <h2>🍉 Fruit Merge</h2>
+                            {!areAssetsLoaded ? (
+                              <p>Loading Assets...</p>
+                            ) : (
+                              <>
+                                <div className="instructions">
+                                  <p>🍎 Drop fruits to merge</p>
+                                  <p>🌱 Same fruits = bigger fruit + seeds</p>
+                                  <p>🌾 Mint seeds on-chain when ready</p>
+                                </div>
+                                <button type="button" className="btn-restart" style={{ fontSize: '1.5rem', padding: '1rem 2.5rem', marginTop: '1rem' }} onClick={startGame}>
+                                  ▶ PLAY NOW
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}        {/* Game Over */}
         {isGameOver && (
           <div className="game-overlay game-over">
             <h2>💥 Game Over!</h2>
@@ -561,7 +656,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
                 )}
               </div>
             )}
-            <button className="btn-restart" onClick={resetGame}>
+            <button type="button" className="btn-restart" onClick={resetGame}>
               🔄 Play Again
             </button>
           </div>
@@ -588,10 +683,10 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
       {/* Fruit Legend */}
       <div className="fruit-legend">
         {FRUITS.slice(0, 5).map((f) => (
-          <span key={f.level} className="fruit-emoji-legend" title={`${f.name} (Lv${f.level})`}>{f.emoji}</span>
+          <img key={f.level} src={f.image} alt={f.name} className="fruit-img-legend" title={`${f.name} (Lv${f.level})`} />
         ))}
         <span>→</span>
-        <span className="fruit-emoji-legend" title="Watermelon (Lv10)">{FRUITS[9].emoji}</span>
+        <img src={FRUITS[9].image} alt="Watermelon" className="fruit-img-legend" title="Watermelon (Lv10)" />
       </div>
     </div>
   )
