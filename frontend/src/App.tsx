@@ -156,6 +156,7 @@ function App() {
           {/* Sky Elements */}
           <div className="sky-container">
             <div className="sun"></div>
+            <div className="moon"></div>
             {/* Stars for Dark Mode */}
             <div className="stars-container">
               <div className="star s1"></div>
