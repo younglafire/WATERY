@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
-import { Transaction } from '@mysten/sui/transactions'
+import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit'
 
 // Import Trang con
 import FruitGame from './components/FruitGame'
@@ -27,9 +26,8 @@ import imgLemon from './assets/fruit/Chanh.png'
 import imgWatermelon from './assets/fruit/Dưa hấu.png'
 import imgSeed from './assets/Hạt 1.svg' // Using Hạt 1.svg for the seed icon
 
-const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
+const PACKAGE_ID = '0x0f183130337b219941e48e27a2bfeebafc88aed7c674ee165cbaa55ab2cc4583'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
-const SEED_DECIMALS = 1_000_000_000 
 
 type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard'
 
@@ -39,13 +37,12 @@ function App() {
      =================================================== */
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
-  const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction()
   const [activeTab, setActiveTab] = useState<GameTab>('game')
   
   const [landId, setLandId] = useState<string | null>(null)
   const [inventoryId, setInventoryId] = useState<string | null>(null)
   const [playerSeeds, setPlayerSeeds] = useState(0)
-  const [txStatus, setTxStatus] = useState('')
+  const [seedScale, setSeedScale] = useState<bigint>(1_000_000_000n)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   
   const [isGameActive, setIsGameActive] = useState(false)
@@ -75,12 +72,31 @@ function App() {
       })
       setLandId(foundLand)
       setInventoryId(foundInventory)
-      setPlayerSeeds(Math.floor(Number(seedBalance.totalBalance) / SEED_DECIMALS))
+      // Divide with BigInt to avoid precision loss
+      const balanceBig = BigInt(seedBalance.totalBalance)
+      const scale = seedScale || 1_000_000_000n
+      setPlayerSeeds(Number(balanceBig / scale))
       setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error loading user objects:', error)
     }
-  }, [account?.address, suiClient])
+  }, [account?.address, seedScale, suiClient])
+
+  // Fetch coin decimals so UI uses the exact on-chain scale
+  useEffect(() => {
+    const fetchDecimals = async () => {
+      try {
+        const meta = await suiClient.getCoinMetadata({ coinType: SEED_COIN_TYPE })
+        if (meta?.decimals !== undefined) {
+          const scale = 10n ** BigInt(meta.decimals)
+          setSeedScale(scale)
+        }
+      } catch (err) {
+        console.warn('Using default SEED decimals (9):', err)
+      }
+    }
+    fetchDecimals()
+  }, [suiClient])
 
   useEffect(() => { loadUserObjects() }, [loadUserObjects])
 
@@ -199,9 +215,9 @@ function App() {
                   case 'game':
                     return <FruitGame onSeedsHarvested={handleSeedsHarvested} onGameStateChange={setIsGameActive} />
                   case 'land':
-                    return <PlayerLand landId={landId} inventoryId={inventoryId} playerSeeds={playerSeeds} onDataChanged={loadUserObjects} />
+                    return <PlayerLand landId={landId} inventoryId={inventoryId} playerSeeds={playerSeeds} seedScale={seedScale} onDataChanged={loadUserObjects} />
                   case 'market':
-                    return <Market inventoryId={inventoryId} onUpdate={loadUserObjects} refreshTrigger={refreshTrigger} />
+                    return <Market inventoryId={inventoryId} onUpdate={loadUserObjects} refreshTrigger={refreshTrigger} playerSeeds={playerSeeds} />
                   case 'leaderboard':
                     return <Leaderboard inventoryId={inventoryId} onUpdate={loadUserObjects} />
                   case 'inventory':
@@ -225,14 +241,6 @@ function App() {
               <button className="btn-confirm" onClick={confirmTabChange}>THOÁT</button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* 5. TOAST STATUS */}
-      {txStatus && (
-        <div className="tx-status">
-          {isPending && <span className="spinner">⏳</span>}
-          <span className="status-text">{txStatus}</span>
         </div>
       )}
 

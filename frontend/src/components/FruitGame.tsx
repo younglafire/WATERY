@@ -15,10 +15,10 @@ import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 
-const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
+const PACKAGE_ID = '0x0f183130337b219941e48e27a2bfeebafc88aed7c674ee165cbaa55ab2cc4583'
 
 // SeedAdminCap shared object ID (from contract publish)
-const SEED_ADMIN_CAP = '0x63a07081520fe716d6a411c773d40313e79aaff63e07e3bff3cf129151b3246d'
+const SEED_ADMIN_CAP = '0xd964a632e79433b3a25137dc13bd556847fe9e116ff40e9c0dd7143473c557e1'
 
 // SEED coin has 9 decimals, so multiply by 10^9
 const SEED_DECIMALS = 1_000_000_000n
@@ -432,7 +432,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
       Matter.Runner.stop(runner)
       Matter.Engine.clear(engine)
     }
-  }, [generateFruitBody, calculateScore, calculateSeeds, loseGame])
+  }, [generateFruitBody, calculateScore, calculateSeeds, loseGame, areAssetsLoaded])
 
   // Start game
   const startGame = useCallback(() => {
@@ -629,8 +629,8 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
                                   <p>🌱 Same fruits = bigger fruit + seeds</p>
                                   <p>🌾 Mint seeds on-chain when ready</p>
                                 </div>
-                                <button className="btn-restart" style={{ fontSize: '1.5rem', padding: '1rem 2.5rem', marginTop: '1rem' }} onClick={startGame}>
-                                  ▶ PLAY GAME
+                                <button type="button" className="btn-restart" style={{ fontSize: '1.5rem', padding: '1rem 2.5rem', marginTop: '1rem' }} onClick={startGame}>
+                                  ▶ PLAY NOW
                                 </button>
                               </>
                             )}
@@ -656,7 +656,7 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
                 )}
               </div>
             )}
-            <button className="btn-restart" onClick={resetGame}>
+            <button type="button" className="btn-restart" onClick={resetGame}>
               🔄 Play Again
             </button>
           </div>

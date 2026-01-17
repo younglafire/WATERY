@@ -52,18 +52,32 @@ module contract::utils {
     const MAX_FRUIT_LEVEL: u8 = 10;
     const INITIAL_DROPS_PER_GAME: u64 = 100;
     
+    // SEED coin has 9 decimals - all costs must be multiplied by this
+    const SEED_DECIMALS: u64 = 1_000_000_000;
+    
     // Land System
     const INITIAL_LAND_SLOTS: u64 = 6;
     const MAX_LAND_SLOTS: u64 = 12;
     const MAX_LANDS_PER_PLAYER: u64 = 5;
-    const LAND_UPGRADE_COST_BASE: u64 = 100;     // Seeds to upgrade land
-    const NEW_LAND_COST: u64 = 500;              // Seeds to buy new land
-    const GROW_TIME_MS: u64 = 15_000;            // 15 seconds to grow
+    const LAND_UPGRADE_COST_BASE: u64 = 100 * 1_000_000_000;     // 100 SEED to upgrade land (with decimals)
+    const NEW_LAND_COST: u64 = 500 * 1_000_000_000;              // 500 SEED to buy new land (with decimals)
+    
+    // Grow times based on rarity (in milliseconds)
+    const GROW_TIME_COMMON: u64 = 15_000;        // 15 seconds for Common
+    const GROW_TIME_UNCOMMON: u64 = 30_000;      // 30 seconds for Uncommon
+    const GROW_TIME_RARE: u64 = 60_000;          // 1 minute for Rare
+    const GROW_TIME_EPIC: u64 = 120_000;         // 2 minutes for Epic
+    const GROW_TIME_LEGENDARY: u64 = 300_000;    // 5 minutes for Legendary
+    
+    // Shop item prices (in SEED with decimals)
+    const WATERING_CAN_COST: u64 = 50 * 1_000_000_000;   // 50 SEED
+    const FERTILIZER_COST: u64 = 100 * 1_000_000_000;    // 100 SEED
+    const SHOVEL_COST: u64 = 25 * 1_000_000_000;         // 25 SEED
     
     // Inventory System
     const INITIAL_INVENTORY_SLOTS: u64 = 20;
     const MAX_INVENTORY_SLOTS: u64 = 200;
-    const INVENTORY_UPGRADE_COST: u64 = 200;     // Base cost, increases with level
+    const INVENTORY_UPGRADE_COST: u64 = 200 * 1_000_000_000;     // 200 SEED base cost (with decimals)
     const INVENTORY_SLOTS_PER_UPGRADE: u64 = 10; // Slots gained per upgrade
 
     // ============================================================================
@@ -184,7 +198,26 @@ module contract::utils {
     public fun max_lands_per_player(): u64 { MAX_LANDS_PER_PLAYER }
     public fun land_upgrade_cost_base(): u64 { LAND_UPGRADE_COST_BASE }
     public fun new_land_cost(): u64 { NEW_LAND_COST }
-    public fun grow_time_ms(): u64 { GROW_TIME_MS }
+    
+    /// Get grow time based on rarity (rarer fruits take longer to grow)
+    public fun get_grow_time_by_rarity(rarity: u8): u64 {
+        if (rarity == RARITY_LEGENDARY) {
+            GROW_TIME_LEGENDARY
+        } else if (rarity == RARITY_EPIC) {
+            GROW_TIME_EPIC
+        } else if (rarity == RARITY_RARE) {
+            GROW_TIME_RARE
+        } else if (rarity == RARITY_UNCOMMON) {
+            GROW_TIME_UNCOMMON
+        } else {
+            GROW_TIME_COMMON
+        }
+    }
+    
+    // Shop item costs
+    public fun watering_can_cost(): u64 { WATERING_CAN_COST }
+    public fun fertilizer_cost(): u64 { FERTILIZER_COST }
+    public fun shovel_cost(): u64 { SHOVEL_COST }
     
     // Inventory Constants
     public fun initial_inventory_slots(): u64 { INITIAL_INVENTORY_SLOTS }
@@ -375,8 +408,16 @@ module contract::utils {
         sui::clock::timestamp_ms(clock)
     }
 
-    /// Check if a fruit is ready to harvest
-    public fun is_fruit_ready(planted_at: u64, current_time: u64): bool {
-        current_time >= planted_at + GROW_TIME_MS
+    /// Check if a fruit is ready to harvest based on rarity
+    public fun is_fruit_ready(planted_at: u64, current_time: u64, rarity: u8): bool {
+        let grow_time = get_grow_time_by_rarity(rarity);
+        current_time >= planted_at + grow_time
+    }
+    
+    /// Check if a fruit is ready with a speed boost applied
+    public fun is_fruit_ready_with_boost(planted_at: u64, current_time: u64, rarity: u8, speed_boost_ms: u64): bool {
+        let grow_time = get_grow_time_by_rarity(rarity);
+        let effective_grow_time = if (speed_boost_ms >= grow_time) { 1000 } else { grow_time - speed_boost_ms };
+        current_time >= planted_at + effective_grow_time
     }
 }

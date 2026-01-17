@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 
-const PACKAGE_ID = '0x1664a15686e5eec8e9554734b7309399265a8771f10f98413bba2227a6537b30'
+const PACKAGE_ID = '0x0f183130337b219941e48e27a2bfeebafc88aed7c674ee165cbaa55ab2cc4583'
 const LEADERBOARD_CONFIG_ID = '0x96e41f44948ff369baaf69c7532348007f26c2e40d6a2e77f5c7a96dbd97c04a'
 const JOIN_FEE_MIST = 10_000_000 // 0.01 SUI in MIST
 const SUI_DECIMALS = 1_000_000_000 // 1 SUI = 10^9 MIST
