@@ -7,6 +7,7 @@ import PlayerLand from './components/PlayerLand'
 import Inventory from './components/Inventory'
 import Market from './components/Market'
 import Leaderboard from './components/Leaderboard'
+import NFTCollection from './components/NFTCollection'
 
 // Import bộ 9 file CSS Modular (Đảm bảo ní đã tạo các file này trong thư mục styles)
 import './styles/Base.css'
@@ -34,7 +35,7 @@ import imgSeed from './assets/Hạt 1.svg' // Using Hạt 1.svg for the seed ico
 const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 
-type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard'
+type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard' | 'collection'
 
 function App() {
   /* ===================================================
@@ -236,6 +237,9 @@ function App() {
               <button className={activeTab === 'inventory' ? 'active' : ''} onClick={() => handleTabChange('inventory')}>
                 <span className="icon">🎒</span><span className="label">BAGS</span>
               </button>
+              <button className={activeTab === 'collection' ? 'active' : ''} onClick={() => handleTabChange('collection')}>
+                <span className="icon">💎</span><span className="label">NFTs</span>
+              </button>
               <button className={activeTab === 'market' ? 'active' : ''} onClick={() => handleTabChange('market')}>
                 <span className="icon">🏪</span><span className="label">MARKET</span>
               </button>
@@ -278,6 +282,8 @@ function App() {
                     return <Market inventoryId={inventoryId} onUpdate={loadUserObjects} refreshTrigger={refreshTrigger} playerSeeds={playerSeeds} />
                   case 'leaderboard':
                     return <Leaderboard inventoryId={inventoryId} onUpdate={loadUserObjects} />
+                  case 'collection':
+                    return <NFTCollection />
                   case 'inventory':
                   default:
                     return <Inventory inventoryId={inventoryId} refreshTrigger={refreshTrigger} onUpdate={loadUserObjects} playerSeeds={playerSeeds} />

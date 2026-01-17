@@ -121,7 +121,8 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
       signAndExecute(
         { transaction: tx },
         {
-          onSuccess: () => {
+          onSuccess: async (result) => {
+            await suiClient.waitForTransaction({ digest: result.digest })
             setTxStatus('Merge Successful! 🌱')
             if (onUpdate) onUpdate()
             // Auto refresh via effect dep on txStatus
@@ -149,7 +150,7 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
       <div className="merchant-area" onClick={openMerchant}>
         <div className="merchant-avatar">👳‍♂️</div>
         <div className="merchant-dialog">
-          <p>"Greetings! I can merge your fruits or sell you useful tools."</p>
+          <p>"Greetings! I can merge your fruits to create <strong>Legendary</strong> ones!"</p>
           <span className="click-hint">(Click to Trade)</span>
         </div>
       </div>
@@ -168,13 +169,13 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
                 className={`tab-btn ${merchantTab === 'merging' ? 'active' : ''}`}
                 onClick={() => setMerchantTab('merging')}
               >
-                🔄 Merging
+                🔄 Weight Merging
               </button>
               <button 
                 className={`tab-btn ${merchantTab === 'buying' ? 'active' : ''}`}
                 onClick={() => setMerchantTab('buying')}
               >
-                🛒 Buying
+                🛒 Tool Shop
               </button>
             </div>
 
@@ -182,9 +183,22 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
 
             {merchantTab === 'merging' ? (
               <>
-                <p className="modal-intro">
-                  Select a fruit type to merge. You need <strong>10</strong> fruits of the same type to create <strong>1</strong> next-level fruit with balanced mass.
-                </p>
+                <div className="merge-explanation">
+                  <h4>🌟 The Secret of Density</h4>
+                  <p>
+                    Combine <strong>10</strong> fruits of the same type to create <strong>1 condensed fruit</strong> of the SAME type.
+                  </p>
+                  <div className="merge-formula">
+                    <span className="formula-part">10 x 🍒 (10g)</span>
+                    <span className="formula-arrow">➔</span>
+                    <span className="formula-part highlight">1 x 🍒 (50g)</span>
+                  </div>
+                  <p className="merge-note">
+                    <strong>Why merge?</strong> Merging preserves 50% of total weight. This creates super-heavy fruits!
+                    <br/>
+                    <span className="legendary-hint">✨ This is the ONLY way to get <strong>LEGENDARY</strong> rarity! Planting caps at Epic.</span>
+                  </p>
+                </div>
 
                 <div className="fruit-selection-grid">
                   {FRUITS.map((fruit) => {
@@ -223,7 +237,7 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
                       return (
                           <div className="merge-actions">
                               <button className="base-btn" disabled={isPending} onClick={() => handleMerge(selectedFruitType, 1)}>
-                                  Merge 10 ➔ 1 {FRUITS.find(f => f.level === selectedFruitType + 1)?.name || 'Legendary'}
+                                  Merge 10 ➔ 1 Heavy {fruit.name}
                               </button>
                               {maxMerges > 1 && (
                                   <button className="max-btn" disabled={isPending} onClick={() => handleMerge(selectedFruitType, maxMerges)}>
@@ -250,7 +264,7 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
                   <div className="shop-item-card info-only">
                     <div className="shop-item-icon">🚿</div>
                     <div className="shop-item-info">
-                      <h4>Chậu Tưới Cây</h4>
+                      <h4>Watering Can</h4>
                       <p className="shop-item-desc">Speeds up ripening by <strong>25%</strong></p>
                     </div>
                     <div className="shop-item-action">
@@ -363,6 +377,48 @@ export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSe
             color: #666;
             font-size: 24px;
             cursor: pointer;
+        }
+        .merge-explanation {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .merge-explanation h4 {
+            color: #3498db;
+            margin: 0 0 10px 0;
+        }
+        .merge-explanation p {
+            font-size: 0.9rem;
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+        .merge-formula {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .formula-part {
+            font-weight: bold;
+        }
+        .formula-part.highlight {
+            color: #ffd700;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+        .merge-note {
+            font-size: 0.85rem !important;
+            margin-top: 10px;
+        }
+        .legendary-hint {
+            color: #ffd700;
+            display: block;
+            margin-top: 5px;
         }
         .fruit-selection-grid {
             display: grid;
