@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSponsoredTransaction, mintSeedsToUser, sponsorClient } from '../hooks/useSponsoredTransaction'
+import { PACKAGE_ID, RANDOM_OBJECT, CLOCK_OBJECT, SEED_ADMIN_CAP } from '../config/sui'
 
 // Soil Assets
 import chauDat from '../assets/Chậu đất.svg'
@@ -19,10 +20,6 @@ import imgPeach from '../assets/fruit/Đào.png'
 import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
-
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
-const RANDOM_OBJECT = '0x8'
-const CLOCK_OBJECT = '0x6'
 
 // Grow times based on rarity (in milliseconds)
 const GROW_TIMES_BY_RARITY: Record<number, number> = {
@@ -46,7 +43,6 @@ const formatTimeLeft = (seconds: number): string => {
   return `${seconds}s`
 }
 
-const SEED_ADMIN_CAP = '0x4d1847752f9470d9cd83a6c76b71801c32623b1c095c8d1f666500223cbfd5ac'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 const SEED_DECIMALS_FALLBACK = 1_000_000_000n
 const NEW_LAND_COST = 500n

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSponsoredTransaction } from '../hooks/useSponsoredTransaction'
+import { PACKAGE_ID, CLOCK_OBJECT, RANDOM_OBJECT, LEADERBOARD_CONFIG_ID } from '../config/sui'
 
 // Fruit Assets
 import imgCherry from '../assets/fruit/Cherry.png'
@@ -15,8 +16,6 @@ import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
-const LEADERBOARD_CONFIG_ID = '0xba8c7f6735c3f7d221c056a102be5afa413d444b4c296fb7db4a9f001397943c'
 const JOIN_FEE_MIST = 10_000_000 
 const SUI_DECIMALS = 1_000_000_000
 const LEADERBOARD_ROUND_TYPE = `${PACKAGE_ID}::leaderboard::LeaderboardRound`
@@ -136,7 +135,7 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
     if (!account) return null
     setIsAutoStarting(true); setTxStatus('🎲 Creating Round...')
     const tx = new Transaction()
-    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::create_new_round`, arguments: [tx.object(LEADERBOARD_CONFIG_ID), tx.object('0x6'), tx.object('0x8')] })
+    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::create_new_round`, arguments: [tx.object(LEADERBOARD_CONFIG_ID), tx.object(CLOCK_OBJECT), tx.object(RANDOM_OBJECT)] })
     signAndExecuteSponsored({ transaction: tx }, {
       onSuccess: async () => {
         setTxStatus('✅ New Tournament Started!')
@@ -153,7 +152,7 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
     if (!account || !inventoryId || !currentRound) return
     setTxStatus('💰 Joining...')
     const tx = new Transaction(); const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(JOIN_FEE_MIST)])
-    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::join_leaderboard`, arguments: [tx.object(currentRound.objectId), tx.object(inventoryId), coin, tx.object('0x6')] })
+    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::join_leaderboard`, arguments: [tx.object(currentRound.objectId), tx.object(inventoryId), coin, tx.object(CLOCK_OBJECT)] })
     signAndExecute({ transaction: tx }, {
       onSuccess: () => { setTxStatus('✅ Joined!'); setTimeout(() => { setTxStatus(''); fetchRoundData(currentRound.objectId); onUpdate?.() }, 2000) },
       onError: (err) => setTxStatus(`❌ Failed: ${err.message}`)
@@ -164,7 +163,7 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
     if (!account || !inventoryId || !currentRound) return
     setTxStatus('🔄 Updating Score...')
     const tx = new Transaction()
-    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::update_entry`, arguments: [tx.object(currentRound.objectId), tx.object(inventoryId), tx.object('0x6')] })
+    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::update_entry`, arguments: [tx.object(currentRound.objectId), tx.object(inventoryId), tx.object(CLOCK_OBJECT)] })
     signAndExecuteSponsored({ transaction: tx }, {
       onSuccess: () => { setTxStatus('✅ Score Updated!'); setTimeout(() => { setTxStatus(''); fetchRoundData(currentRound.objectId); onUpdate?.() }, 2000) },
       onError: (err) => setTxStatus(`❌ Failed: ${err.message}`)
@@ -175,7 +174,7 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
     if (!account || !currentRound) return
     setTxStatus('💰 Distributing Prizes...')
     const tx = new Transaction()
-    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::close_round_and_distribute`, arguments: [tx.object(LEADERBOARD_CONFIG_ID), tx.object(currentRound.objectId), tx.object('0x6')] })
+    tx.moveCall({ target: `${PACKAGE_ID}::leaderboard::close_round_and_distribute`, arguments: [tx.object(LEADERBOARD_CONFIG_ID), tx.object(currentRound.objectId), tx.object(CLOCK_OBJECT)] })
     signAndExecuteSponsored({ transaction: tx }, {
       onSuccess: () => { setTxStatus('✅ Prizes Distributed!'); setTimeout(() => { setTxStatus(''); fetchRoundData(currentRound.objectId); onUpdate?.() }, 2000) },
       onError: (err) => setTxStatus(`❌ Failed: ${err.message}`)

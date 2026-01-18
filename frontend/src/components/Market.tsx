@@ -2,9 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSponsoredTransaction } from '../hooks/useSponsoredTransaction'
-
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
-const CLOCK_OBJECT = '0x6'
+import { PACKAGE_ID, CLOCK_OBJECT } from '../config/sui'
 
 // Fruit Assets
 import imgCherry from '../assets/fruit/Cherry.png'

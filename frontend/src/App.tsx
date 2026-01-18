@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit'
+import { PACKAGE_ID } from './config/sui'
 
 // Import Trang con
 import FruitGame from './components/FruitGame'
@@ -40,7 +41,6 @@ import imgCherry from './assets/fruit/Cherry.png'
 import imgOrange from './assets/fruit/Cam.png'
 import imgSeed from './assets/Hạt 1.svg' // Using Hạt 1.svg for the seed icon
 
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const SEED_COIN_TYPE = `${PACKAGE_ID}::seed::SEED`
 
 type GameTab = 'game' | 'land' | 'inventory' | 'market' | 'leaderboard' | 'collection'

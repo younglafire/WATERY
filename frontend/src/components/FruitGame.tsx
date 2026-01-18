@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import Matter from 'matter-js'
 import { mintSeedsToUser, sponsorClient } from '../hooks/useSponsoredTransaction'
+import { PACKAGE_ID, SEED_ADMIN_CAP } from '../config/sui'
 
 // Fruit Assets
 import imgCherry from '../assets/fruit/Cherry.png'
@@ -18,8 +19,6 @@ import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 // Import Logo mới
 import logoNgang from '../assets/Logo ngang.svg'
 
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
-const SEED_ADMIN_CAP = '0x4d1847752f9470d9cd83a6c76b71801c32623b1c095c8d1f666500223cbfd5ac'
 const SEED_DECIMALS = 1_000_000_000n
 
 const WALL_THICKNESS = 20

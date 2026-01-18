@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSponsoredTransaction } from '../hooks/useSponsoredTransaction'
+import { PACKAGE_ID } from '../config/sui'
 
 // Fruit Assets (tái sử dụng)
 import imgCherry from '../assets/fruit/Cherry.png'
@@ -15,7 +16,6 @@ import imgPineapple from '../assets/fruit/Thơm.png'
 import imgMelon from '../assets/fruit/Dưa lưới.png'
 import imgWatermelon from '../assets/fruit/Dưa hấu.png'
 
-const PACKAGE_ID = '0x599868f3b4e190173c1ec1d3bd2738239461d617f74fe136a1a2f021fdf02503'
 const NFT_TYPE = `${PACKAGE_ID}::fruit_nft::FruitNFT`
 
 const FRUITS = [

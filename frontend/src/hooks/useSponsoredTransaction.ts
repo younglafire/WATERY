@@ -1,14 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useCurrentAccount, useSignTransaction, useSuiClient } from '@mysten/dapp-kit'
-import { SuiClient, getFullnodeUrl, type SuiObjectRef } from '@mysten/sui/client'
+import { SuiClient, type SuiObjectRef } from '@mysten/sui/client'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { Transaction } from '@mysten/sui/transactions'
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography'
 import { fromBase64 } from '@mysten/sui/utils'
-
-// Sponsor wallet configuration
-// Address: 0x438b067c7ad8673897d826d5800621aeba1d9016f5c0db4d0f97550bfd9059da
-const SPONSOR_PRIVATE_KEY = 'suiprivkey1qzkejytknake27tl58q5ymnvdz63e6zq8cp69x0a3ng89rsvdamuz9kwvqn'
+import { SUI_FULLNODE_URL, SPONSOR_PRIVATE_KEY } from '../config/sui'
 
 // Create the sponsor keypair from the private key
 function getSponsorKeypair(): Ed25519Keypair {
@@ -17,7 +14,7 @@ function getSponsorKeypair(): Ed25519Keypair {
 }
 
 // Create a standalone SUI client for sponsor operations
-const sponsorClient = new SuiClient({ url: getFullnodeUrl('testnet') })
+const sponsorClient = new SuiClient({ url: SUI_FULLNODE_URL })
 
 // Get sponsor address
 export function getSponsorAddress(): string {
