@@ -21,7 +21,7 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
 
   const addLog = useCallback((message: string, type: 'success' | 'info' = 'success', icon?: string) => {
     const newEntry: ActivityLogEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       message,
       type,
       timestamp: new Date(),

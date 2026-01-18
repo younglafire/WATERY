@@ -201,7 +201,15 @@ export default function Inventory({ inventoryId, refreshTrigger, onUpdate, playe
     const [payment] = tx.splitCoins(tx.object(seedCoins.data[0].coinObjectId), [tx.pure.u64(upgradeCost * SEED_DECIMALS)])
     tx.moveCall({ target: `${PACKAGE_ID}::player::upgrade_inventory`, arguments: [tx.object(playerObj.data.objectId), tx.object(inventoryId), payment, tx.object(SEED_ADMIN_CAP)] })
     
-    signAndExecute({ transaction: tx }, { onSuccess: async (result) => { await suiClient.waitForTransaction({ digest: result.digest }); addLog(`Inventory upgraded (+${INVENTORY_SLOTS_PER_UPGRADE} slots)`, 'success', '⬆️'); onUpdate?.(); setTxStatus('✅ Upgraded!'); setTimeout(() => setTxStatus(''), 3000); } })
+    signAndExecute({ transaction: tx }, { 
+      onSuccess: async (result) => { 
+        await suiClient.waitForTransaction({ digest: result.digest })
+        addLog(`Inventory upgraded (+${INVENTORY_SLOTS_PER_UPGRADE} slots)`, 'success', '⬆️')
+        onUpdate?.()
+        setTxStatus('✅ Upgraded!')
+        setTimeout(() => setTxStatus(''), 3000)
+      } 
+    })
   }
 
   const isFull = fruits.length >= maxSlots
