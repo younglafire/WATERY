@@ -623,7 +623,8 @@ export default function FruitGame({ onSeedsHarvested, onGameStateChange }: Fruit
                         {/* Start Screen */}
                         {!gameStarted && (
                           <div className="game-overlay start-screen">
-                            <h2>🍉 Fruit Merge</h2>
+                            <img src={imgWatermelon} alt="Watery Logo" className="start-logo" style={{ width: '120px', marginBottom: '1rem' }} />
+                            <h2 style={{ fontSize: '3rem', letterSpacing: '4px' }}>WATERY</h2>
                             {!areAssetsLoaded ? (
                               <p>Loading Assets...</p>
                             ) : (

@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hackathon</title>
+    <title>Sui Fruit Merge</title>
+    <style>
+      /* Force Cursor Styles Global */
+      body, html, * {
+        cursor: url('/cursor-default.png') 0 0, auto !important;
+      }
+      
+      /* Interactive Elements */
+      button, a, .clickable, [role="button"] {
+        cursor: url('/cursor-pointer.png') 0 0, pointer !important;
+      }
+      
+      /* Active State */
+      button:active, a:active {
+        cursor: url('/cursor-active.png') 16 16, grabbing !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

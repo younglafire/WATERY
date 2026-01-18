@@ -224,7 +224,8 @@ function App() {
           {/* SIDEBAR / BOTTOM BAR */}
           <aside className="sidebar-menu">
             <div className="sidebar-header">
-              <h2>🍉 FRUIT<br/>MERGE</h2>
+              <img src={imgWatermelon} alt="Watery Logo" className="game-logo" />
+              <h2 className="watery-title">WATERY</h2>
             </div>
             
             <nav className="sidebar-nav">

@@ -5,6 +5,46 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* CURSOR GAME CUSTOM - Pro Version */
+  cursor: url('/cursor-default.png') 0 0, auto;
+}
+
+/* Các thành phần có thể tương tác */
+button, 
+a, 
+.slot, 
+.merchant-area, 
+.fruit-merge-card,
+.inventory-item-large,
+.nft-card,
+.filter-pill,
+.filter-btn,
+.select-mode-btn,
+.upgrade-btn {
+  cursor: url('/cursor-pointer.png') 0 0, pointer !important;
+}
+
+/* Trạng thái đang kéo/thả hoặc click - Áp dụng toàn trang */
+html:active,
+body:active,
+*:active {
+  cursor: url('/cursor-active.png') 16 16, grabbing !important;
+}
+
+/* Đặc biệt cho phần Game thả trái cây */
+.canvas-container canvas {
+  cursor: url('/cursor-pointer.png') 0 0, crosshair !important;
+}
+
+.canvas-container canvas:active {
+  cursor: url('/cursor-active.png') 16 16, grabbing !important;
+}
+
+/* Khi đang dùng công cụ trong Farm */
+.slots-grid.tool-mode .slot.tool-target {
+  cursor: url('/cursor-pointer.png') 0 0, crosshair !important;
 }
 
 :root {
