@@ -626,6 +626,41 @@ export default function PlayerLand({
       
       {txStatus && <div className="tx-status">{isPending && <span className="spinner">⏳</span>}{txStatus}</div>}
 
+      {/* First-time user: No land exists yet */}
+      {!activeLandId && allLands.length === 0 && (
+        <div className="no-land-container">
+          <div className="no-land-content">
+            <div className="no-land-icon">🏝️</div>
+            <h3 className="no-land-title">Welcome to Your Farm!</h3>
+            <p className="no-land-description">
+              You don't have any land yet. Create your first farm plot to start growing delicious fruits!
+            </p>
+            <div className="no-land-features">
+              <div className="feature-item">
+                <span className="feature-icon">🌱</span>
+                <span>Plant seeds</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">⏱️</span>
+                <span>Watch them grow</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">🍎</span>
+                <span>Harvest fruits</span>
+              </div>
+            </div>
+            <button 
+              className="create-land-btn"
+              onClick={createFirstLand} 
+              disabled={isPending}
+            >
+              {isPending ? '⏳ Creating...' : '🏡 Create Your First Land'}
+            </button>
+            <p className="no-land-hint">It's free! Get started now.</p>
+          </div>
+        </div>
+      )}
+
       {activeLandId && (
         <>
           <div className="land-info"><span>Level {landLevel}</span><span>{maxSlots} slots</span></div>
