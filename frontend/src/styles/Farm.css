@@ -443,7 +443,165 @@
 }
 
 /* ===================================================
-   7. MOBILE OPTIMIZATION
+   7. NO LAND / FIRST TIME USER STATE
+   =================================================== */
+.no-land-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.no-land-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 450px;
+  border: 5px solid #2ecc71;
+  box-shadow: 0 15px 0 rgba(39, 174, 96, 0.3), 0 25px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.no-land-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(90deg, #2ecc71, #27ae60, #1abc9c, #27ae60, #2ecc71);
+  background-size: 200% 100%;
+  animation: gradientSlide 3s ease-in-out infinite;
+}
+
+@keyframes gradientSlide {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.no-land-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.no-land-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.no-land-description {
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.no-land-features {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #ecf0f1;
+  border-radius: 16px;
+  min-width: 90px;
+  transition: transform 0.2s ease;
+}
+
+.feature-item:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 2rem;
+}
+
+.feature-item span:last-child {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34495e;
+}
+
+.create-land-btn {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white;
+  border: none;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.3rem;
+  font-weight: 900;
+  border-radius: 20px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 0 #1e8449, 0 15px 25px rgba(0, 0, 0, 0.2);
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-land-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.create-land-btn:hover::before {
+  left: 100%;
+}
+
+.create-land-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 0 #1e8449, 0 20px 30px rgba(0, 0, 0, 0.25);
+}
+
+.create-land-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 4px 0 #1e8449, 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.create-land-btn:disabled {
+  background: #95a5a6;
+  box-shadow: 0 8px 0 #7f8c8d;
+  cursor: not-allowed;
+}
+
+.no-land-hint {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #27ae60;
+  font-weight: 700;
+}
+
+/* ===================================================
+   8. MOBILE OPTIMIZATION
    =================================================== */
 @media (max-width: 600px) {
   .player-land h2 {
@@ -485,5 +643,45 @@
     text-align: center;
     font-size: 0.8rem;
     padding: 0.5rem;
+  }
+
+  /* No Land Container Mobile */
+  .no-land-container {
+    padding: 1rem;
+    min-height: 350px;
+  }
+
+  .no-land-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .no-land-icon {
+    font-size: 3.5rem;
+  }
+
+  .no-land-title {
+    font-size: 1.5rem;
+  }
+
+  .no-land-description {
+    font-size: 1rem;
+  }
+
+  .no-land-features {
+    gap: 0.75rem;
+  }
+
+  .feature-item {
+    padding: 0.75rem;
+    min-width: 75px;
+  }
+
+  .feature-icon {
+    font-size: 1.5rem;
+  }
+
+  .create-land-btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
   }
 }
