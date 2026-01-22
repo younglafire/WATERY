@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSponsoredTransaction } from '../hooks/useSponsoredTransaction'
@@ -44,16 +44,14 @@ interface LeaderboardProps { inventoryId: string | null; onUpdate?: () => void }
 
 export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps) {
   const account = useCurrentAccount(); const suiClient = useSuiClient()
-  const { mutate: signAndExecute, isPending: isJoinPending } = useSignAndExecuteTransaction()
-  const { mutate: signAndExecuteSponsored, isPending: isSponsoredPending } = useSponsoredTransaction()
-  const isPending = isJoinPending || isSponsoredPending
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction()
+  const { mutate: signAndExecuteSponsored } = useSponsoredTransaction()
   
   const [currentRound, setCurrentRound] = useState<LeaderboardRound | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [myEntry, setMyEntry] = useState<LeaderboardEntry | null>(null)
-  const [isLoading, setIsLoading] = useState(true); const [txStatus, setTxStatus] = useState('')
+  const [, setIsLoading] = useState(true); const [txStatus, setTxStatus] = useState('')
   const [timeRemaining, setTimeRemaining] = useState<string>(''); const [isAutoStarting, setIsAutoStarting] = useState(false)
-  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const findLatestRound = useCallback(async (): Promise<string | null> => {
     try {
@@ -85,7 +83,7 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
     } catch (err) { return null }
   }, [suiClient])
 
-  const fetchEntries = async (tableId: string, count: number) => {
+  const fetchEntries = async (tableId: string, _count: number) => {
     try {
       const fields = await suiClient.getDynamicFields({ parentId: tableId, limit: 50 })
       const data: LeaderboardEntry[] = []
@@ -204,9 +202,6 @@ export default function Leaderboard({ inventoryId, onUpdate }: LeaderboardProps)
 
   // Calculate Prize Pool manually: Participants * Fee * 0.9
   const displayPrizePool = currentRound ? (currentRound.participantCount * JOIN_FEE_MIST * 0.9) : 0
-
-  // Check if user is already a participant
-  const isParticipant = entries.some(e => e.player === account?.address)
 
   return (
     <div className="rank-container">

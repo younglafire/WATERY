@@ -124,8 +124,6 @@ export default function PlayerLand({
   const [showBatchModal, setShowBatchModal] = useState(false)
   const [batchSeeds, setBatchSeeds] = useState(1)
   const [showHarvestWarning, setShowHarvestWarning] = useState(false)
-  const [showPlantAllLandsModal, setShowPlantAllLandsModal] = useState(false)
-  const [allLandsSeedsPerSlot, setAllLandsSeedsPerSlot] = useState(1)
   
   const [selectedTool, setSelectedTool] = useState<ShopItemKey | null>(null)
   const [slotSpeedBoosts, setSlotSpeedBoosts] = useState<Record<number, number>>({})

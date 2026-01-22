@@ -1,4 +1,6 @@
-import { getFullnodeUrl, type SuiNetwork } from '@mysten/sui/client'
+import { getFullnodeUrl } from '@mysten/sui/client'
+
+type SuiNetwork = 'mainnet' | 'testnet' | 'devnet' | 'localnet'
 
 // Centralized Sui environment configuration with sensible defaults for local development.
 const defaults = {
