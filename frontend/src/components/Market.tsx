@@ -64,7 +64,7 @@ const calculateRarityFromWeight = (type: number, weight: number): number => {
   return 1
 }
 
-export default function Market({ inventoryId, onUpdate, refreshTrigger, playerSeeds = 0, initialMergeFruitType = null, mergeTrigger = 0 }: MarketProps) {
+export default function Market({ inventoryId, onUpdate, refreshTrigger }: MarketProps) {
   const account = useCurrentAccount(); const suiClient = useSuiClient(); const { mutate: signAndExecute, isPending } = useSponsoredTransaction()
   const [inventoryFruits, setInventoryFruits] = useState<InventoryFruit[]>([]); const [txStatus, setTxStatus] = useState('')
   const [showConfirmModal, setShowConfirmModal] = useState(false); const [showResultModal, setShowResultModal] = useState(false)
